@@ -25,10 +25,10 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
 
   private lastUpdate1min = new Date('2021-01-01');
   private lastUpdate10min = new Date('2021-01-01');
-  private update1min=false;
-  private update10min=false;
+  private update1min = false;
+  private update10min = false;
   private start = true;
-  private deviceList:ObjectResult[] = [];
+  private deviceList: ObjectResult[] = [];
 
   constructor(
     public readonly log: Logger,
@@ -49,7 +49,7 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
     this.log.debug('Finished initializing platform:', this.config.name);
 
     setInterval(() => {
-      if (this.Token==='') {
+      if (this.Token === '') {
         this.Token = this.getToken(false);
         this.LoginTries = 0;
       } else {
@@ -58,25 +58,25 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
     }, (this.config['UpdateTime'] as number) * 1000);
   }
 
-  updateDeviceStatus(deviceList:ObjectResult[]) {
+  updateDeviceStatus(deviceList: ObjectResult[]) {
     const httpRequest = new HttpRequest(this.config, this.log);
 
     const now = new Date();
-    const added1Min = new Date(this.lastUpdate1min.getTime()+(1*60000));
-    const added10Min = new Date(this.lastUpdate10min.getTime()+(10*60000));
+    const added1Min = new Date(this.lastUpdate1min.getTime() + (1 * 60000));
+    const added10Min = new Date(this.lastUpdate10min.getTime() + (10 * 60000));
 
-    if (now>added1Min) {
+    if (now > added1Min) {
       this.lastUpdate1min = now;
       this.update1min = true;
     }
 
-    if (now>added10Min) {
+    if (now > added10Min) {
       this.lastUpdate10min = now;
       this.update10min = true;
     }
 
     for (const device of deviceList) {
-      httpRequest.GetDeviceStatus(device.deviceCode, this.Token).then((deviceResults)=> {
+      httpRequest.GetDeviceStatus(device.deviceCode, this.Token).then((deviceResults) => {
         const deviceResult = <AquaTempObject>deviceResults;
         const deviceNickName = device.deviceNickName;
 
@@ -88,7 +88,7 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
           const thermometerObject = this.getAccessory(device, 'thermometer');
           const thermometerService = thermometerObject.accessory.getService(this.Service.TemperatureSensor);
 
-          if (thermostatService!==undefined) {
+          if (thermostatService !== undefined) {
             let targetTemp = 0;
             let currentTemp = 0;
             let currentPowerUsage = 0;
@@ -97,153 +97,168 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
             for (const codeData of deviceResult.objectResult) {
               device.deviceNickName = deviceNickName;
 
-              if (codeData.code ==='T02') {
+              if (codeData.code === 'T02') {
                 if (this.config['ViewWaterThermometer'] as boolean === true) {
                   if (this.config['Debug'] as boolean) {
-                    this.log.info('Update water IN temperature for ' + device.deviceNickName + ': '+codeData.value);
+                    this.log.info('Update water IN temperature for ' + device.deviceNickName + ': ' + codeData.value);
                   }
 
-                  if (codeData.value!==null) {
+                  if (codeData.value !== null) {
                     currentTemp = parseFloat(codeData.value);
 
-                    thermostatService.updateCharacteristic(this.Characteristic.CurrentTemperature, codeData.value);
+                    if (this.config['CurrentTempSource'] === 'water-in') {
+                      thermostatService.updateCharacteristic(this.Characteristic.CurrentTemperature, codeData.value);
+
+                      if (this.config['Debug'] as boolean) {
+                        this.log.info('Update current temperature (water in) for ' + device.deviceNickName + ': ' + codeData.value);
+                      }
+                    }
 
                     const thermometerObjectWater = this.getAccessory(device, 'thermometerwater');
                     const thermometerServiceWater = thermometerObjectWater.accessory.getService(this.Service.TemperatureSensor);
 
-                    if (thermometerServiceWater!==undefined) {
+                    if (thermometerServiceWater !== undefined) {
                       thermometerServiceWater.updateCharacteristic(this.Characteristic.CurrentTemperature, codeData.value);
                     }
                   }
                 }
               }
 
-              if (codeData.code ==='T03') {
+              if (codeData.code === 'T03') {
                 if (this.config['ViewWaterOutThermometer'] as boolean === true) {
                   if (this.config['Debug'] as boolean) {
-                    this.log.info('Update water OUT temperature for ' + device.deviceNickName + ': '+codeData.value);
+                    this.log.info('Update water OUT temperature for ' + device.deviceNickName + ': ' + codeData.value);
                   }
 
-                  if (codeData.value!==null) {
+                  if (codeData.value !== null) {
                     currentTemp = parseFloat(codeData.value);
 
-                    thermostatService.updateCharacteristic(this.Characteristic.CurrentTemperature, codeData.value);
+                    if (!this.config['CurrentTempSource'] || this.config['CurrentTempSource'] === 'water-out') {
+                      thermostatService.updateCharacteristic(this.Characteristic.CurrentTemperature, codeData.value);
+
+                      if (this.config['Debug'] as boolean) {
+                        this.log.info('Update current temperature (water out) for ' + device.deviceNickName + ': ' + codeData.value);
+                      }
+                    }
 
                     const thermometerObjectWater = this.getAccessory(device, 'thermometerwaterout');
                     const thermometerServiceWater = thermometerObjectWater.accessory.getService(this.Service.TemperatureSensor);
 
-                    if (thermometerServiceWater!==undefined) {
+                    if (thermometerServiceWater !== undefined) {
                       thermometerServiceWater.updateCharacteristic(this.Characteristic.CurrentTemperature, codeData.value);
                     }
                   }
                 }
               }
 
-              if (codeData.code ==='R02') {
+              if (codeData.code === 'R02') {
                 if (this.config['Debug'] as boolean) {
-                  this.log.info('Update target temperature for ' + device.deviceNickName + ': '+codeData.value);
+                  this.log.info('Update target temperature for ' + device.deviceNickName + ': ' + codeData.value);
                 }
 
-                if (codeData.value!==null) {
+                if (codeData.value !== null) {
                   targetTemp = parseFloat(codeData.value);
 
-                  if (targetTemp<10) {
-                    targetTemp=10;
+                  if (targetTemp < 10) {
+                    targetTemp = 10;
                   }
 
                   thermostatService.updateCharacteristic(this.Characteristic.TargetTemperature, targetTemp);
                 }
               }
 
-              if (codeData.code ==='power') {
-                const isOn = (codeData.value==='0' || codeData.value===null) ?false:true;
+              if (codeData.code === 'power') {
+                const isOn = (codeData.value === '0' || codeData.value === null) ? false : true;
 
                 if (this.config['Debug'] as boolean) {
-                  this.log.info('Update power for ' + device.deviceNickName + ': '+isOn);
+                  this.log.info('Update power for ' + device.deviceNickName + ': ' + isOn);
                 }
 
                 isHeating = isOn;
 
                 thermostatService.updateCharacteristic(this.Characteristic.TargetHeatingCoolingState,
-                  isOn?this.Characteristic.TargetHeatingCoolingState.HEAT: this.Characteristic.TargetHeatingCoolingState.OFF);
+                  isOn ? this.Characteristic.TargetHeatingCoolingState.HEAT : this.Characteristic.TargetHeatingCoolingState.OFF);
               }
 
-              if (codeData.code ==='T05') {
-                if (thermometerService!==undefined) {
+              if (codeData.code === 'T05') {
+                if (thermometerService !== undefined) {
                   if (this.config['Debug'] as boolean) {
-                    this.log.info('Update air temperature for ' + device.deviceNickName + ': '+codeData.value);
+                    this.log.info('Update air temperature for ' + device.deviceNickName + ': ' + codeData.value);
                   }
 
-                  if (codeData.value!==null) {
+                  if (codeData.value !== null) {
                     thermometerService.updateCharacteristic(this.Characteristic.CurrentTemperature, codeData.value);
                   }
                 }
               }
 
-              if (codeData.code ==='T12') {
+              if (codeData.code === 'T12') {
                 if (this.config['ViewElectricPowerUsage'] as boolean) {
                   currentPowerUsage = parseInt(codeData.value);
                   thermostatService.setCharacteristic(this.customCharacteristic.characteristic.ElectricPower, currentPowerUsage);
 
                   if (this.config['Debug'] as boolean) {
-                    this.log.info('Update power usage for ' + device.deviceNickName + ': '+codeData.value+'W');
+                    this.log.info('Update power usage for ' + device.deviceNickName + ': ' + codeData.value + 'W');
                   }
                 }
               }
 
-              if (thermostatSwitchService!==undefined && codeData.code ==='Manual-mute') {
-                const isOn = codeData.value==='1'?true: false;
+              if (thermostatSwitchService !== undefined && codeData.code === 'Manual-mute') {
+                const isOn = codeData.value === '1' ? true : false;
                 thermostatSwitchService.updateCharacteristic(this.Characteristic.On, isOn);
 
                 if (this.config['Debug'] as boolean) {
-                  this.log.info('Update silence mode for ' + device.deviceNickName + ': '+isOn);
+                  this.log.info('Update silence mode for ' + device.deviceNickName + ': ' + isOn);
                 }
               }
             }
 
             if (this.config['ViewElectricPowerUsage'] as boolean) {
               const powerConsumptionLimit = this.config['PowerConsumptionLimit'] as number;
-              if (device.isFault!==false || currentPowerUsage<=powerConsumptionLimit) {
+              if (device.isFault !== false || currentPowerUsage <= powerConsumptionLimit) {
                 isHeating = false;
               }
             } else {
-              if (device.isFault!==false) {
+              if (device.isFault !== false) {
                 isHeating = false;
               }
             }
 
             if (this.config['Debug'] as boolean) {
-              this.log.info('Update heating status for ' + device.deviceNickName + ': '+isHeating);
+              this.log.info('Update heating status for ' + device.deviceNickName + ': ' + isHeating);
             }
 
             thermostatService.updateCharacteristic(this.Characteristic.CurrentHeatingCoolingState,
-              isHeating?this.Characteristic.CurrentHeatingCoolingState.HEAT: this.Characteristic.CurrentHeatingCoolingState.OFF);
+              isHeating ? this.Characteristic.CurrentHeatingCoolingState.HEAT : this.Characteristic.CurrentHeatingCoolingState.OFF);
 
             if (this.config['EveLoging'] as boolean) {
 
               if (this.update10min) {
-                if (this.start===false){
+                if (this.start === false) {
                   thermostatObject.accessory.context.fakeGatoService.setExtraPersistedData({
-                    totalenergy:thermostatObject.accessory.context.totalenergy});
+                    totalenergy: thermostatObject.accessory.context.totalenergy,
+                  });
                 }
 
-                thermostatObject.accessory.context.fakeGatoService.addEntry({time: Math.round(new Date().valueOf() / 1000),
-                  currentTemp: currentTemp, setTemp: targetTemp, valvePosition: 1, power: currentPowerUsage});
+                thermostatObject.accessory.context.fakeGatoService.addEntry({
+                  time: Math.round(new Date().valueOf() / 1000),
+                  currentTemp: currentTemp, setTemp: targetTemp, valvePosition: 1, power: currentPowerUsage,
+                });
               }
 
               if (this.update1min) {
-                if (this.start===true) {
-                  if (thermostatObject.accessory.context.fakeGatoService!==undefined) {
+                if (this.start === true) {
+                  if (thermostatObject.accessory.context.fakeGatoService !== undefined) {
                     if (thermostatObject.accessory.context.fakeGatoService.isHistoryLoaded()) {
                       const extraPersistedData = thermostatObject.accessory.context.fakeGatoService.getExtraPersistedData();
 
                       if (extraPersistedData !== undefined) {
                         thermostatObject.accessory.context.totalenergy = extraPersistedData.totalenergy;
                         this.log.info(device.deviceNickName + ' - loading total energy from file ' +
-                        thermostatObject.accessory.context.totalenergy+' kWh');
+                          thermostatObject.accessory.context.totalenergy + ' kWh');
                       } else {
                         this.log.warn(device.deviceNickName + ' - starting new log for total energy in file!');
-                        thermostatObject.accessory.context.fakeGatoService.setExtraPersistedData({ totalenergy:0, lastReset: 0 });
+                        thermostatObject.accessory.context.fakeGatoService.setExtraPersistedData({ totalenergy: 0, lastReset: 0 });
                         this.log.warn(device.deviceNickName + ' - done!');
                       }
                     } else {
@@ -251,21 +266,21 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
                     }
                   }
 
-                  this.start =false;
+                  this.start = false;
                 }
 
                 const now = new Date().getTime();
-                const refresh = (now - thermostatObject.accessory.context.lastUpdated)/ 1000;
+                const refresh = (now - thermostatObject.accessory.context.lastUpdated) / 1000;
                 const add = (currentPowerUsage / ((60 * 60) / (refresh)));
-                const totalenergy = thermostatObject.accessory.context.totalenergy + add/1000;
+                const totalenergy = thermostatObject.accessory.context.totalenergy + add / 1000;
                 thermostatObject.accessory.context.lastUpdated = now;
                 thermostatObject.accessory.context.totalenergy = totalenergy;
 
                 if (this.config['Debug'] as boolean) {
-                  if (currentPowerUsage>0) {
-                    const totalenergyLog = Math.round(totalenergy* 100000) / 100000;
-                    this.log.info(thermostatObject.accessory.displayName +': '+ totalenergyLog +
-                      ' kWh from '+thermostatObject.accessory.context.startTime.toISOString());
+                  if (currentPowerUsage > 0) {
+                    const totalenergyLog = Math.round(totalenergy * 100000) / 100000;
+                    this.log.info(thermostatObject.accessory.displayName + ': ' + totalenergyLog +
+                      ' kWh from ' + thermostatObject.accessory.context.startTime.toISOString());
                   }
                 }
 
@@ -291,26 +306,26 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
       });
     }
 
-    this.update1min= false;
-    this.update10min= false;
+    this.update1min = false;
+    this.update10min = false;
   }
 
-  getToken(start:boolean): string {
-    this.LoginTries +1;
+  getToken(start: boolean): string {
+    this.LoginTries + 1;
 
-    if (this.LoginTries<3) {
+    if (this.LoginTries < 3) {
       const httpRequest = new HttpRequest(this.config, this.log);
 
-      httpRequest.Login().then((results)=> {
+      httpRequest.Login().then((results) => {
 
-        if (results!==undefined) {
+        if (results !== undefined) {
           const aquaTempObject = <LoginObject>results;
 
-          if (aquaTempObject!==undefined) {
+          if (aquaTempObject !== undefined) {
             if (aquaTempObject.isReusltSuc) {
               this.log.info('Token', aquaTempObject.objectResult['x-token']);
               this.Token = aquaTempObject.objectResult['x-token'];
-              this.LoginTries=0;
+              this.LoginTries = 0;
 
               if (start) {
                 this.getAllDevices().then(devices => {
@@ -322,7 +337,7 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
                 });
               }
             } else {
-              this.log.error('Failed to login, '+aquaTempObject.error_msg);
+              this.log.error('Failed to login, ' + aquaTempObject.error_msg);
             }
           } else {
             this.log.error('aquaTempObject = undefined');
@@ -397,7 +412,7 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
     }
   }
 
-  discoverDevices(deviceList:ObjectResult[]) {
+  discoverDevices(deviceList: ObjectResult[]) {
     if (this.config['ClearAllAtStartUp'] as boolean) {
       this.log.warn('ClearAllAtStartUp', 'Removing all existing accessory');
 
@@ -427,7 +442,7 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
       const thermostatObject = this.getAccessory(device, 'thermostat');
       if (this.config['EveLoging'] as boolean === true) {
         const fakeGatoService = new this.FakeGatoHistoryService('custom', thermostatObject.accessory,
-          {log: this.log, storage: 'fs', disableTimer:true});
+          { log: this.log, storage: 'fs', disableTimer: true });
 
         thermostatObject.accessory.context.fakeGatoService = fakeGatoService;
       }
@@ -441,9 +456,9 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
 
       for (const device of deviceList) {
         if (accessory.UUID === this.localIdForType(device, 'thermostat') ||
-            accessory.UUID === this.localIdForType(device, 'thermometer') ||
-            accessory.UUID === this.localIdForType(device, 'thermometerwater') ||
-            accessory.UUID === this.localIdForType(device, 'thermometerwaterout')) {
+          accessory.UUID === this.localIdForType(device, 'thermometer') ||
+          accessory.UUID === this.localIdForType(device, 'thermometerwater') ||
+          accessory.UUID === this.localIdForType(device, 'thermometerwaterout')) {
           found = true;
         }
       }
@@ -476,24 +491,24 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
   public getAccessory(device: ObjectResult, type: string) {
     const existingAccessory = this.accessories.find(accessory => accessory.UUID === this.localIdForType(device, type));
 
-    if (existingAccessory!==undefined) {
+    if (existingAccessory !== undefined) {
       existingAccessory.displayName = device.deviceNickName;
 
-      return {accessory : existingAccessory, exists : true};
+      return { accessory: existingAccessory, exists: true };
     }
 
     const accessory = new this.api.platformAccessory(device.deviceNickName, this.localIdForType(device, type));
     accessory.context.device = device;
 
-    return {accessory : accessory, exists : false};
+    return { accessory: accessory, exists: false };
   }
 
   public addOrRestorAccessory(accessory: PlatformAccessory<Record<string, unknown>>, name: string, type: string, exists: boolean) {
     if (exists) {
-      this.log.info('Restoring existing accessory:', name +' ('+type+')');
+      this.log.info('Restoring existing accessory:', name + ' (' + type + ')');
       this.api.updatePlatformAccessories([accessory]);
     } else {
-      this.log.info('Adding new accessory:', name +' ('+type+')');
+      this.log.info('Adding new accessory:', name + ' (' + type + ')');
       this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
     }
 
@@ -501,11 +516,11 @@ export class AquaTempHomebridgePlatform implements DynamicPlatformPlugin {
   }
 
   public removeAccessory(accessory: PlatformAccessory<Record<string, unknown>>, name: string, type: string) {
-    this.log.info('Removing existing accessory:', name +' ('+type+')');
+    this.log.info('Removing existing accessory:', name + ' (' + type + ')');
     this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
   }
 
-  localIdForType(device:ObjectResult, type:string):string {
-    return this.api.hap.uuid.generate(device.deviceId.toString()+'_'+type);
+  localIdForType(device: ObjectResult, type: string): string {
+    return this.api.hap.uuid.generate(device.deviceId.toString() + '_' + type);
   }
 }

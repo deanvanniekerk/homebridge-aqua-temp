@@ -1,16 +1,16 @@
 {
   "private": false,
   "displayName": "Aqua Temp Plugin",
-  "name": "homebridge-aqua-temp",
-  "version": "2.9.0",
+  "name": "@deanvniekerk/homebridge-aqua-temp",
+  "version": "1.0.2",
   "description": "This is a plugin for Aqua Temp pool heater.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git://https://github.com/hjuhlin/homebridge-aqua-temp.git"
+    "url": "git://https://github.com/deanvanniekerk/homebridge-aqua-temp.git"
   },
   "bugs": {
-    "url": "https://github.com/hjuhlin/homebridge-aqua-temp/issues"
+    "url": "https://github.com/deanvanniekerk/homebridge-aqua-temp/issues"
   },
   "engines": {
     "node": ">=10.17.0",

@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "AquaTemp",
+  "pluginAlias": "DvnAquaTemp",
   "pluginType": "platform",
   "singular": true,
   "schema": {
@@ -28,25 +28,45 @@
         "type": "number",
         "required": true,
         "default": 60
-      } ,
+      },
       "ViewWaterThermometer": {
         "title": "Extra thermometer for water IN temperature",
         "type": "boolean",
         "required": false,
         "default": false
-      },   
+      },
       "ViewWaterOutThermometer": {
         "title": "Extra thermometer for water OUT temperature",
         "type": "boolean",
         "required": false,
         "default": false
-      },           
+      },
+      "CurrentTempSource": {
+        "title": "Current temperature source",
+        "type": "string",
+        "default": "water-out",
+        "oneOf": [
+          {
+            "title": "Water In",
+            "enum": [
+              "water-in"
+            ]
+          },
+          {
+            "title": "Water Out",
+            "enum": [
+              "water-out"
+            ]
+          }
+        ],
+        "required": true
+      },
       "ViewElectricPowerUsage": {
         "title": "View electric power usage (only works in Eve app)",
         "type": "boolean",
         "required": false,
         "default": false
-      },  
+      },
       "PowerConsumptionLimit": {
         "title": "Power consumption limit in watts when the heater is heating or not (also requiers view electric power usage)",
         "type": "number",

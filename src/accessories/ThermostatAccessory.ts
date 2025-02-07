@@ -24,12 +24,12 @@ export class ThermostatAccessory {
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'AquaTemp')
       .setCharacteristic(this.platform.Characteristic.Model, 'AquaTempThermostat')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.context.device.device_id+'_heater');
+      .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.context.device.deviceId + '_heater');
 
     this.service = this.accessory.getService(this.platform.Service.Thermostat) ||
-    this.accessory.addService(this.platform.Service.Thermostat);
+      this.accessory.addService(this.platform.Service.Thermostat);
 
-    this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.device_nick_name + ' ('+SubName+')');
+    this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceNickName + ' (' + SubName + ')');
     this.service.setCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits,
       this.platform.Characteristic.TemperatureDisplayUnits.CELSIUS);
 
@@ -49,7 +49,7 @@ export class ThermostatAccessory {
     this.service.getCharacteristic(this.platform.Characteristic.TargetTemperature).onSet(this.setTemperature.bind(this));
 
     this.serviceSwitch = this.accessory.getService(this.platform.Service.Switch) ||
-    this.accessory.addService(this.platform.Service.Switch, 'Silent mode');
+      this.accessory.addService(this.platform.Service.Switch, 'Silent mode');
 
     this.serviceSwitch.setCharacteristic(this.platform.Characteristic.On, false);
     this.serviceSwitch.getCharacteristic(this.platform.Characteristic.On).on('set', this.setOn.bind(this));
@@ -76,7 +76,7 @@ export class ThermostatAccessory {
   }
 
   setState(value: CharacteristicValue) {
-    if (this.startUp===true) {
+    if (this.startUp === true) {
       return;
     }
 
@@ -84,79 +84,79 @@ export class ThermostatAccessory {
 
     switch (value) {
       case this.platform.Characteristic.TargetHeatingCoolingState.HEAT:
-        on=true;
+        on = true;
     }
 
     const httpRequest = new HttpRequest(this.config, this.log);
-    httpRequest.ChangePowerOfDevice(this.accessory.context.device.device_code, on, this.platform.Token).then((results)=> {
+    httpRequest.ChangePowerOfDevice(this.accessory.context.device.deviceCode, on, this.platform.Token).then((results) => {
 
       const result = <AquaTempObject>results;
 
-      if (result.isReusltSuc===false) {
+      if (result.isReusltSuc === false) {
         this.log.error(result.error_msg);
         this.log.error(result.error_code);
         this.log.error(result.error_msg_code);
       } else {
-        this.log.info('Changed state to ' +(value?'HEAT':'OFF'));
+        this.log.info('Changed state to ' + (value ? 'HEAT' : 'OFF'));
       }
     }).catch((error) => {
-      if (error==='NotLoggedIn') {
+      if (error === 'NotLoggedIn') {
         this.platform.getToken(false);
       }
     });
   }
 
   setTemperature(value: CharacteristicValue) {
-    if (this.startUp===true) {
+    if (this.startUp === true) {
       return;
     }
 
-    if (value<10) {
-      value=10;
+    if (typeof value === 'number' && value < 10) {
+      value = 10;
     }
 
     const temp = value as string;
 
     const httpRequest = new HttpRequest(this.config, this.log);
-    httpRequest.ChangeTargetTemperatureOfDevice(this.accessory.context.device.device_code, temp, this.platform.Token).then((results)=> {
+    httpRequest.ChangeTargetTemperatureOfDevice(this.accessory.context.device.deviceCode, temp, this.platform.Token).then((results) => {
 
       const result = <AquaTempObject>results;
 
-      if (result.isReusltSuc===false) {
+      if (result.isReusltSuc === false) {
         this.log.error(result.error_msg);
         this.log.error(result.error_code);
         this.log.error(result.error_msg_code);
       } else {
-        this.log.info('Changed target temperature to ' +(value));
+        this.log.info('Changed target temperature to ' + (value));
       }
     }).catch((error) => {
-      if (error==='NotLoggedIn') {
+      if (error === 'NotLoggedIn') {
         this.platform.getToken(false);
       }
     });
   }
 
   setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
-    if (this.startUp===true) {
+    if (this.startUp === true) {
       return;
     }
 
-    const onOff = value ? '1': '0';
+    const onOff = value ? '1' : '0';
 
     const httpRequest = new HttpRequest(this.config, this.log);
-    httpRequest.ChangeSilenceModeOfDevice(this.accessory.context.device.device_code, onOff, this.platform.Token).then((results)=> {
+    httpRequest.ChangeSilenceModeOfDevice(this.accessory.context.device.deviceCode, onOff, this.platform.Token).then((results) => {
 
       const result = <AquaTempObject>results;
 
-      if (result.isReusltSuc===false) {
+      if (result.isReusltSuc === false) {
         this.log.error(result.error_msg);
         this.log.error(result.error_code);
         this.log.error(result.error_msg_code);
       } else {
-        this.log.info('Changed silence mode to ' +(value));
+        this.log.info('Changed silence mode to ' + (value));
       }
     }).catch((error) => {
-      if (error==='NotLoggedIn') {
+      if (error === 'NotLoggedIn') {
         this.platform.getToken(false);
       }
     });
