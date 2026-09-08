@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import dns from 'node:dns';
 import { createServer } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { once } from 'node:events';
@@ -6,33 +7,7 @@ import { test } from 'node:test';
 import { inspect } from 'node:util';
 import { AquaTempClient } from '../dist/cloud-client.js';
 
-// All responses and identities in this file are synthetic, not captured traffic.
-const success = (objectResult) => ({ error_code: '0', isReusltSuc: true, objectResult });
-const login = success({ 'x-token': 'synthetic-token', userId: 'synthetic-user', appId: '14' });
-const credentials = { username: 'synthetic@example.invalid', password: 'synthetic-password' };
-
-async function serverFor(t, handle) {
-  const calls = [];
-  const server = createServer(async (req, res) => {
-    let body = '';
-    for await (const chunk of req) body += chunk;
-    const call = { path: req.url, token: req.headers['x-token'], body: JSON.parse(body) };
-    calls.push(call);
-    await handle(call, res, calls);
-  });
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
-  t.after(() => {
-    server.closeAllConnections();
-    server.close();
-  });
-  return { origin: `http://127.0.0.1:${server.address().port}`, calls };
-}
-
-function reply(res, body, status = 200, headers = {}) {
-  res.writeHead(status, { 'Content-Type': 'application/json', ...headers });
-  res.end(JSON.stringify(body));
-}
+import { credentials, login, reply, serverFor, success } from './fake-cloud.mjs';
 
 function virtualClock() {
   let now = Date.parse('2026-09-08T12:00:00Z');
@@ -592,4 +567,28 @@ test('permission denial for one device does not invalidate another device or ren
     status: 'ONLINE',
   });
   assert.equal(server.calls.length, 3);
+});
+
+test('DNS lookup failure traverses the real HTTPS transport without disclosing resolver errors', async (t) => {
+  const original = dns.lookup;
+  let lookups = 0;
+  dns.lookup = (hostname, options, callback) => {
+    assert.equal(hostname, 'cloud.linked-go.com');
+    lookups += 1;
+    const error = Object.assign(new Error('synthetic-private-resolver@example.invalid'), {
+      code: 'ENOTFOUND',
+    });
+    setImmediate(() => callback(error));
+  };
+  t.after(() => {
+    dns.lookup = original;
+  });
+  const client = new AquaTempClient(credentials, { readBudgetMs: 100, clock: virtualClock() });
+  t.after(() => client.close());
+  await assert.rejects(client.read({ kind: 'owned' }), (error) => {
+    assert.equal(error.category, 'unavailable');
+    assert.doesNotMatch(inspect(error), /synthetic-private|@|ENOTFOUND|cloud\.linked-go/);
+    return true;
+  });
+  assert.equal(lookups, 1);
 });
