@@ -18,6 +18,8 @@ The ARM command requires a clean committed checkout. It runs the same checks in 
 
 The earlier read-only checkpoint passed 75 tests, with minimum/latest Node 22 on Linux x64 and pinned emulated Linux ARMv7 CI in merged PRs #15–#19. This delivery extends the actual gateway, packed Homebridge process and virtual soak to supported commands. Final verification for this delivery is recorded in its PR checks; commands above reproduce the suite. Tests never load the real account or private evidence.
 
+At completion snapshot `afe5a69`, `npm run check` passed formatting, lint, typechecking and all 78 tests on native macOS arm64 / Node 22.23.2. The test phase took about 44 seconds. The standalone model and adapter snapshots each passed their 77-test suites. Both review passes are clear after correcting an intermediate package assertion and adding the explicit target-reconciliation regression. Each completion PR also runs minimum/latest Node 22 x64 and emulated ARMv7 CI; inspect its checks for the final merge result.
+
 ## Evidence by boundary
 
 | Requirement                                                                                   | Evidence                                                                                                                                             | Scope                                                                                                                                                                                                                      |
