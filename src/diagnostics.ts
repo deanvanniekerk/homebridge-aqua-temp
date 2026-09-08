@@ -180,7 +180,7 @@ export class Diagnostics {
       status: statuses.has(state.status) ? state.status : 'unavailable',
       controls:
         control?.available === true
-          ? 'verified'
+          ? 'available'
           : control?.available === false && reasons.has(control.reason)
             ? control.reason
             : 'unavailable',

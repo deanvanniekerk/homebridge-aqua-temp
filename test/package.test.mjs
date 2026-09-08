@@ -78,6 +78,10 @@ test(
   'packed plugin loads in a clean production Homebridge host and survives restart',
   { timeout: 180_000 },
   async (t) => {
+    let targetValue = '32',
+      power = '0',
+      ignoreWrite = false;
+    let expectedWrites = 0;
     const server = await serverFor(t, (call, response) => {
       const path = call.path.split('/').at(-1);
       const device = {
@@ -85,11 +89,27 @@ test(
         model: 'PASRW040-P-BP4II-C',
         custModel: 'BOOSTi-INV-HP-40',
       };
+      if (path === 'control') {
+        const command = call.body.param[0];
+        if (!ignoreWrite) {
+          if (command.protocolCode === 'R02') targetValue = command.value;
+          else if (command.protocolCode === 'Power') power = command.value;
+          else throw new Error('Unexpected mode write');
+        }
+        return reply(response, success(null));
+      }
       const result = {
         deviceList: [device],
         getMyAppectDeviceShareDataList: [device],
-        getDeviceStatus: { status: 'ONLINE' },
-        getDataByCode: [{ code: 'T02', dataType: 'TEMP', value: '20.5' }],
+        getDeviceStatus: { status: 'ONLINE', isFault: false },
+        getDataByCode: [
+          { code: 'T02', dataType: 'TEMP', value: '20.5' },
+          { code: 'R02', dataType: 'TEMP', value: targetValue },
+          { code: 'Set_Temp', dataType: 'TEMP', value: '32' },
+          { code: 'Power', dataType: 'ENUM', value: power },
+          { code: 'Mode', dataType: 'ENUM', value: '1' },
+          { code: 'O07', dataType: null, value: '0' },
+        ],
       }[path];
       reply(response, path === 'login' ? login : success(result));
     });
@@ -152,7 +172,11 @@ test(
         for (const accessory of body.accessories) {
           const service = accessory.services.find((item) => item.type === '4A');
           const current = service?.characteristics.find((item) => item.type === '11');
-          if (current?.value === 20.5) water = { aid: accessory.aid, iid: current.iid, service };
+          const target = service?.characteristics.find((item) => item.type === '35');
+          // HAP snapshots metadata before awaiting getters. Startup discovery can
+          // therefore contain fresh readings with the previous read-only props.
+          if (current?.value === 20.5 && target?.perms.includes('pw'))
+            water = { aid: accessory.aid, iid: current.iid, service };
         }
         if (Date.now() >= deadline)
           throw new Error(`No fresh thermostat in Homebridge: ${JSON.stringify(body)}`);
@@ -165,20 +189,60 @@ test(
       const read = await fetch(
         `${origin}/characteristics?id=${water.aid}.${water.iid},${water.aid}.${target.iid}`,
       );
-      assert.equal(read.status, 207);
+      assert.equal(read.status, 200);
       const values = (await read.json()).characteristics;
       assert.equal(values.find((item) => item.iid === water.iid).value, 20.5);
-      assert.equal(values.find((item) => item.iid === target.iid).status, -70402);
-      const write = await fetch(`${origin}/characteristics`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/hap+json', authorization: config.bridge.pin },
-        body: JSON.stringify({ characteristics: [{ aid: water.aid, iid: target.iid, value: 31 }] }),
-      });
-      assert.equal(write.status, 207);
+      assert.equal(values.find((item) => item.iid === target.iid).value, 32);
       assert.equal(
-        (await write.json()).characteristics[0].status,
-        -70404,
-        'unverified control is read-only',
+        server.calls.filter((call) => call.path.endsWith('/control')).length,
+        expectedWrites,
+        'startup/restart sends no commands',
+      );
+      assert.equal(target.minValue, 15);
+      assert.equal(target.maxValue, 38, 'HomeKit/device range intersection');
+      assert.equal(target.minStep, 0.5);
+      const state = water.service.characteristics.find((item) => item.type === '33');
+      const activity = water.service.characteristics.find((item) => item.type === 'F');
+      assert.equal(activity.value, 0);
+      async function writeValue(characteristic, value, succeeds = true) {
+        const response = await fetch(`${origin}/characteristics`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/hap+json', authorization: config.bridge.pin },
+          body: JSON.stringify({
+            characteristics: [{ aid: water.aid, iid: characteristic.iid, value }],
+          }),
+        });
+        if (succeeds) assert.equal(response.status, 204);
+        else {
+          assert.equal(response.status, 207);
+          assert.equal((await response.json()).characteristics[0].status, -70402);
+        }
+      }
+      await writeValue(target, 32.5);
+      await writeValue(state, 1);
+      const confirmed = await fetch(
+        `${origin}/characteristics?id=${water.aid}.${target.iid},${water.aid}.${state.iid}`,
+      );
+      assert.deepEqual(
+        (await confirmed.json()).characteristics.map((item) => item.value),
+        [32.5, 1],
+      );
+      await writeValue(state, 0);
+      await writeValue(target, 32);
+      ignoreWrite = true;
+      await writeValue(target, 31, false);
+      ignoreWrite = false;
+      const unchanged = await fetch(`${origin}/characteristics?id=${water.aid}.${target.iid}`);
+      assert.equal(
+        (await unchanged.json()).characteristics[0].value,
+        32,
+        'accepted but unconfirmed write never becomes reported state',
+      );
+      expectedWrites += 5;
+      assert.equal(
+        server.calls.filter((call) => call.path.endsWith('/control')).length,
+        expectedWrites,
+        'each setter sends one absolute write',
       );
     };
     const diagnosticOutput = await runHomebridge(consumer, undefined, {
@@ -192,7 +256,7 @@ test(
     const report = JSON.parse(reportLines[0].split('Diagnostic report: ')[1]);
     assert.equal(report.runtime.plugin, '0.0.0-development.0');
     assert.equal(report.devices[0].reference, 'device-1');
-    assert.equal(report.devices[0].controls, 'unsupported');
+    assert.equal(report.devices[0].controls, 'available');
     assert.doesNotMatch(JSON.stringify(report), /synthetic|@|token|deviceCode|deviceId/);
 
     await runHomebridge(consumer, undefined, { ...processOptions, exercise });
@@ -218,6 +282,11 @@ test(
     await runHomebridge(consumer, undefined, childOptions);
     await runHomebridge(consumer, undefined, childOptions);
     assert.equal(server.calls.filter((call) => call.path.endsWith('/login')).length, 5);
+    assert.equal(expectedWrites, 25);
+    assert.equal(
+      server.calls.filter((call) => call.path.endsWith('/control')).length,
+      expectedWrites,
+    );
     assert.ok(
       server.calls.every((call) =>
         [
@@ -226,6 +295,7 @@ test(
           'getMyAppectDeviceShareDataList',
           'getDeviceStatus',
           'getDataByCode',
+          'control',
         ].includes(call.path.split('/').at(-1)),
       ),
     );
