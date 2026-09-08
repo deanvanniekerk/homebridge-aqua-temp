@@ -10,7 +10,8 @@ import { AquaTempClient } from './cloud-client.js';
 import { AccountCoordinator, type AccountSnapshot } from './coordinator.js';
 import { AquaTempGateway } from './gateway.js';
 import { Thermostat } from './thermostat.js';
-import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
+import { PLATFORM_NAME, PLUGIN_NAME, pluginVersion } from './settings.js';
+import { Diagnostics } from './diagnostics.js';
 import { isRecord } from './cloud-error.js';
 
 type Accessory = PlatformAccessory<Record<string, unknown>>;
@@ -21,6 +22,7 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
   readonly #log: Logger;
   readonly #accessories = new Map<string, { accessory: Accessory; thermostat: Thermostat }>();
   readonly #shutdown = new AbortController();
+  readonly #diagnostics: Diagnostics | undefined;
   readonly #config: AquaTempConfig | undefined;
   readonly #coordinator: AccountCoordinator | undefined;
   #started = false;
@@ -36,6 +38,16 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
     });
     try {
       this.#config = parseConfig(config);
+      this.#diagnostics = new Diagnostics(
+        (message) => {
+          log.info(message);
+        },
+        {
+          pluginVersion: pluginVersion(),
+          homebridgeVersion: api.serverVersion,
+          debug: this.#config.debug,
+        },
+      );
       this.#coordinator = new AccountCoordinator(
         new AquaTempGateway(new AquaTempClient(this.#config)),
         { intervalMs: this.#config.pollInterval * 1000 },
@@ -115,6 +127,7 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
   }
 
   private synchronize(snapshot: AccountSnapshot): void {
+    this.#diagnostics?.observe(snapshot);
     for (const state of snapshot.devices) {
       if (!this.selected(state.device.id) || state.device.profile !== 'boost-i-hp40') continue;
       const uuid = this.uuid(state.device.id);

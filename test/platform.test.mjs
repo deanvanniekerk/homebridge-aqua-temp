@@ -20,12 +20,26 @@ async function waitUntil(condition) {
   }
 }
 const uuid = (api, id = device.deviceCode) => api.hap.uuid.generate(`${PLUGIN_NAME}:device:${id}`);
-async function host(t, extraConfig = {}, cached = [], empty = false) {
+async function host(t, extraConfig = {}, cached = [], scenario = 'online') {
   const server = await serverFor(t, (call, response) => {
     const path = call.path.split('/').at(-1);
+    if (scenario === 'denied' && path === 'login') {
+      reply(
+        response,
+        {
+          error: {
+            message: credentials.password,
+            email: credentials.username,
+            token: 'synthetic-token',
+          },
+        },
+        401,
+      );
+      return;
+    }
     const result = {
-      deviceList: empty ? [] : [device],
-      getMyAppectDeviceShareDataList: empty ? [] : [device],
+      deviceList: scenario === 'empty' ? [] : [device],
+      getMyAppectDeviceShareDataList: scenario === 'empty' ? [] : [device],
       getDeviceStatus: { status: 'ONLINE' },
       getDataByCode: [{ code: 'T02', value: '20.5', dataType: 'TEMP' }],
     }[path];
@@ -98,7 +112,7 @@ test('platform registers one namespaced identity, restores it before fresh reads
   const serialized = cold.api.platformAccessory.serialize(accessory);
   assert.deepEqual(serialized.context, { deviceId: device.deviceCode, displayUnits: 0 });
   cold.stop();
-  const warm = await host(t, {}, [serialized], true);
+  const warm = await host(t, {}, [serialized], 'empty');
   await assert.rejects(
     current(warm.api, warm.restored[0]).handleGetRequest(),
     (error) => error === -70402,
@@ -132,4 +146,31 @@ test('explicit selection removes only excluded plugin identities; invalid config
   );
   assert.match(invalid.logs.join('\n'), /Configuration rejected/);
   assert.doesNotMatch(invalid.logs.join('\n'), /synthetic-password|synthetic@example/);
+});
+
+test('real login denial before discovery reaches sanitized normal/debug diagnostics without exposing vendor errors', async (t) => {
+  for (const debug of [false, true]) {
+    const h = await host(t, { debug }, [], 'denied');
+    h.api.emit('didFinishLaunching');
+    await waitUntil(() => h.logs.some((line) => line.includes('Check credentials')));
+    assert.equal(h.calls.length, 1);
+    assert.equal(h.registered.length, 0);
+    assert.doesNotMatch(
+      h.logs.join('\n'),
+      /synthetic-device|synthetic-password|synthetic@example|synthetic-token/,
+    );
+    const lines = h.logs.filter((line) => line.startsWith('Diagnostic report: '));
+    assert.equal(lines.length, debug ? 1 : 0);
+    if (debug) {
+      const report = JSON.parse(lines[0].slice('Diagnostic report: '.length));
+      assert.deepEqual(report.account, {
+        discoveryComplete: false,
+        failure: 'invalid-credentials',
+      });
+      assert.deepEqual(report.devices, []);
+      assert.equal(report.runtime.plugin, '0.0.0-development.0');
+      assert.equal(report.runtime.homebridge, '2.4.0');
+    }
+    h.stop();
+  }
 });

@@ -1,8 +1,8 @@
 # Development foundation
 
-This package is an original dynamic-platform foundation for issue #3. It registers `AquaTemp`, retains restored accessory references, receives Homebridge launch/shutdown events, and takes HAP from `api.hap`. It does not contact Aqua Temp, discover devices, expose controls, or configure existing hardware. Accessory binding and stale-state handling belong to the later adapter work.
+The original dynamic platform now connects the [cloud client](CLOUD_CLIENT.md), [device model](DEVICE_MODEL.md) and [coordinator](COORDINATOR.md) to real Homebridge thermostat characteristics. See [adapter behavior and remaining gates](HOMEBRIDGE_ADAPTER.md). It discovers the supported profile, restores cached identities and exposes verified water readings. Target writes and activity remain unavailable with the actual profile because their protocol evidence is incomplete.
 
-Issue #4 adds a tested internal [cloud transport and session client](CLOUD_CLIENT.md). It is not wired to the platform; account configuration and heater controls remain unavailable.
+[Configuration validation and diagnostics](CONFIGURATION.md) now include runtime transitions and sanitized JSON reports in the Homebridge log when debug is enabled. This is an unfinished development package, not a release or hardware-validation claim.
 
 ## Selected tools
 
@@ -42,7 +42,7 @@ npm test
 Tests may download public npm dependencies for an isolated consumer host. They use only synthetic Homebridge configuration in temporary directories, bind HAP to loopback on an ephemeral port, and never read the real account or Homebridge configuration. Two package-level contracts are checked:
 
 1. The tarball contains exactly the reviewed runtime files; it imports from outside the repository without dependencies, and its publication guard fails. Source, tests, captures, credentials, maps and tooling are excluded by the explicit package allowlist.
-2. A fresh production-only consumer installs the tarball with Homebridge 2.4.0, loads the registered platform in a real process, reaches startup and shuts down cleanly, then repeats with the same storage. TypeScript/ESLint are absent. This is a package/lifecycle contract, not a physical-host, accessory-cache or Apple Home pairing test.
+2. A fresh production-only consumer installs the tarball with Homebridge 2.4.0, loads the registered platform in a real process against a loopback fake cloud, reaches startup and shuts down, then repeats with the same storage. It also checks safe rejection of invalid configuration and recovery on a subsequent corrected start. TypeScript/ESLint are absent. The process test also exercises real HAP HTTP characteristic reads and rejected writes, fresh water readings, cached accessory identity across warm restart, and separate child-bridge cold/warm starts. This is not an Apple Home pairing or physical-host test.
 
 The root lockfile fixes development dependency resolution. The isolated consumer pins Homebridge 2.4.0 but resolves its production dependency ranges independently, exercising installation as a consumer would; it is not a second locked development environment.
 
@@ -56,9 +56,9 @@ This requires a clean committed checkout and a local Unix-socket Docker context.
 
 ## Identity, packaging and publication
 
-Provisional identity: `@deanvanniekerk/homebridge-aqua-temp`, version `0.0.0-development.0`. GitHub ownership does not prove npm scope ownership. The platform alias is `AquaTemp`; use it only for development smoke runs until device integration is implemented.
+Provisional identity: `@deanvanniekerk/homebridge-aqua-temp`, version `0.0.0-development.0`. GitHub ownership does not prove npm scope ownership. The platform alias is `AquaTemp`; use it only for development runs while control integration and protocol verification remain incomplete.
 
-The package allowlist includes compiled JavaScript and `config.schema.json`; npm also includes package metadata, README and LICENSE. Build output is disposable and not committed. The schema offers only a display name: account configuration is deferred to issue #8, so do not supply real credentials to this foundation.
+The package allowlist includes compiled JavaScript and `config.schema.json`; npm also includes package metadata, README and LICENSE. Build output is disposable and not committed. The schema and runtime parser require credentials and accept optional device IDs, poll interval and debug settings. Development smoke tests supply synthetic credentials: test-host-only routing redirects the vendor origin to a loopback fake HTTP server. Production code has no test-origin setting; the routing helper is excluded from the tarball.
 
 Publication is disabled by `private: true` and an explicit failing `prepublishOnly` hook. CI has read-only repository permissions and no publish/release workflow. Removing these guards and verifying scope rights belong to issue #11; no npm release is part of this work.
 
