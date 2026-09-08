@@ -172,7 +172,11 @@ test(
         for (const accessory of body.accessories) {
           const service = accessory.services.find((item) => item.type === '4A');
           const current = service?.characteristics.find((item) => item.type === '11');
-          if (current?.value === 20.5) water = { aid: accessory.aid, iid: current.iid, service };
+          const target = service?.characteristics.find((item) => item.type === '35');
+          // HAP snapshots metadata before awaiting getters. Startup discovery can
+          // therefore contain fresh readings with the previous read-only props.
+          if (current?.value === 20.5 && target?.perms.includes('pw'))
+            water = { aid: accessory.aid, iid: current.iid, service };
         }
         if (Date.now() >= deadline)
           throw new Error(`No fresh thermostat in Homebridge: ${JSON.stringify(body)}`);
