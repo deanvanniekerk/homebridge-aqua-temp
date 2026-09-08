@@ -2,11 +2,60 @@
   "pluginAlias": "AquaTemp",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "Development foundation only. Heat pump discovery and controls are not implemented. Do not enter cloud credentials yet.",
+  "headerDisplay": "Development build: device integration remains incomplete. Use a dedicated Aqua Temp shared account when available. Credentials stay in your local Homebridge configuration; never include them in issue reports.",
   "schema": {
     "type": "object",
+    "required": ["username", "password"],
     "properties": {
-      "name": { "title": "Name", "type": "string", "default": "Aqua Temp" }
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "default": "Aqua Temp",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^\\S(?:[^\\r\\n]*\\S)?$"
+      },
+      "username": {
+        "title": "Aqua Temp username",
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 320,
+        "pattern": "^\\S(?:[^\\r\\n]*\\S)?$"
+      },
+      "password": {
+        "title": "Aqua Temp password",
+        "type": "string",
+        "format": "password",
+        "minLength": 1,
+        "maxLength": 4096,
+        "pattern": "\\S"
+      },
+      "deviceIds": {
+        "title": "Device IDs (optional)",
+        "description": "Leave empty to include all discovered devices. Otherwise include only these IDs.",
+        "type": "array",
+        "maxItems": 100,
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^\\S(?:[^\\r\\n]*\\S)?$"
+        }
+      },
+      "pollInterval": {
+        "title": "Poll interval (seconds)",
+        "type": "integer",
+        "minimum": 30,
+        "maximum": 300,
+        "default": 60
+      },
+      "debug": {
+        "title": "Debug diagnostics",
+        "description": "Write a sanitized JSON diagnostic report to the Homebridge log, at most once every five minutes. After enabling, restart the platform and search the log for “Diagnostic report”.",
+        "type": "boolean",
+        "default": false
+      }
     }
   }
 }
