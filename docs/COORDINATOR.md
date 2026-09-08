@@ -18,19 +18,19 @@ Closing cancels both the scheduled poll and in-flight cycle, and refuses restart
 
 ## Command handling
 
-`command` accepts an immutable snapshot of an absolute target-temperature or Off/Heat request. Before admission and again at dispatch, it requires fresh, healthy state and calls the gateway's local command validator. That validator must establish the profile, absolute command semantics, writable bounds/step and authoritative readback mapping. The real-device evidence needed for this contract remains incomplete; the synthetic gateway in these tests does not enable physical controls.
+`command` accepts an immutable snapshot of an absolute target-temperature or Off/Heat request. Before admission and again at dispatch, it requires fresh, healthy state and calls the gateway's local command validator. That validator must establish the profile, absolute command semantics, writable bounds/step and authoritative readback mapping. The real gateway implements the limited Heat contract in DEVICE_MODEL.md; synthetic gateway tests additionally isolate queue behavior.
 
 Each device admits at most four commands, including the active command. Excess requests fail as busy. Commands execute serially per device; another device can proceed independently. Every request has an eight-second deadline starting at queue admission, including time waiting, authentication, dispatch and readback. Failure of an active request cancels its remaining queued requests; none are stored or replayed after an outage or restart. If the underlying gateway ignores cancellation, its dispatch lock remains held until that operation settles: polling can recover readings, but new commands fail as busy instead of racing a late write.
 
-The provisional confirmation mechanism performs one read after transport acceptance within the same deadline. Success requires the normalized reported target to match, or confirmed power Off / power On with representable Heat mode. A mismatch returns an explicit unconfirmed result and retains the actual reading. This is not proof of compressor actuation. The real gateway must remain gated until its authoritative fields and timing satisfy the device evidence requirements; one synthetic successful read does not resolve vendor settling behavior.
+The provisional confirmation mechanism performs one read after transport acceptance within the same deadline. Success requires the normalized reported target to match, or confirmed power Off / power On with representable Heat mode. A mismatch returns an explicit unconfirmed result and retains the actual reading. This is not proof of compressor actuation. The real gateway checks the supported profile before each dispatch. One successful read does not resolve vendor settling behavior; a mismatch remains an explicit error even if the setting later converges.
 
 Polls carry per-device revisions. Reads and failures from before a command, or while a command is active, cannot replace a newer command result. Retry-After remains an account-wide timing constraint even when the poll's device-state result is obsolete. Command completion requests a fresh account poll without overlapping an existing cycle or bypassing Retry-After. If an operation finishes after cancellation, it invalidates polls started before that late completion and requests read-only reconciliation; it cannot complete the expired setter, publish its late readback, or repeat the write. Later app changes are adopted through ordinary polling.
 
 ## Integration boundaries
 
-- Physical controls remain gated on the verified command/readback mappings in issue #5 and their Homebridge integration in issue #7. Vendor evidence may require adjustments to confirmation timing.
+- Supported controls use the bounded profile in issue #5 and the Homebridge integration in issue #7. Unverified modes and ambiguous operating activity remain unavailable; later vendor evidence may require confirmation-policy changes.
 - Multi-page discovery remains an engineering assumption until an account with multiple pages is available for observation.
 - The Homebridge adapter and runtime diagnostics consume the state stream in the subsequent issue #7 and #8 delivery changes.
-- Full control-path integration and fault validation remains part of issue #9.
+- Control-path integration and fault validation are recorded in issue #9 and VALIDATION.md.
 
 Command completion policy depends on the evidence gates in [DEVICE_MODEL.md](DEVICE_MODEL.md). Completion of the coordinator mechanism does not establish physical actuation or remove those gates; its polling and synthetic command tests prove only the behavior at the injected gateway boundary.

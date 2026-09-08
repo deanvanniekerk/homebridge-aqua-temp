@@ -2,7 +2,7 @@
 
 Each issue contains scope, dependencies, acceptance criteria and a verification deliverable. [SPEC.md](SPEC.md) defines the shared product and engineering contract.
 
-The repository contains the specification and [runtime compatibility findings](COMPATIBILITY.md). Plugin implementation is still pending; the linked issues track each work item's current status.
+The repository implements the limited Heat plugin and local validation. The linked issues track delivery; actual-host validation (#10) and distribution (#11) remain separate. See [device limitations](DEVICE_MODEL.md#supported-control-subset-and-limitations).
 
 | Issue | Work | Depends on |
 | --- | --- | --- |

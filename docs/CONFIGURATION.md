@@ -6,7 +6,7 @@ Ajv 8.20.0 is an exact development-only dependency used to compare real JSON Sch
 
 The platform validates configuration during construction. A rejected configuration emits an actionable, value-free message and does not install the launch callback; Homebridge remains running. A clean tarball installation test checks valid startup, restart, rejected configuration without credential leakage, and recovery after fixing the configuration.
 
-The development platform now connects to Aqua Temp for discovery and readings; physical controls remain gated by unverified protocol mappings. The platform observes coordinator snapshots and provides the diagnostic behavior below, including account failures before any device is discovered. Completing the dependent control integration remains separate work.
+The development platform connects to Aqua Temp for discovery, readings and the limited Heat controls described in DEVICE_MODEL.md. The platform observes coordinator snapshots and provides the diagnostic behavior below, including account failures before any device is discovered.
 
 ## Diagnostic contract
 
@@ -26,6 +26,6 @@ The UI schema was inspected for required account fields, password formatting, ex
 
 ## Local provisioning
 
-Once integration is ready, enter credentials through your local Homebridge UI or its persistent local configuration. Keep that configuration outside the source repository; it contains the password in a form the plugin must be able to read. Never place credentials in accessory context, screenshots, issue bodies, command-line arguments or published fixtures. Development probes use the already ignored `.secrets/` mechanism and ordinary tests use synthetic accounts only.
+Enter credentials through your local Homebridge UI or its persistent local configuration. Keep that configuration outside the source repository; it contains the password in a form the plugin must be able to read. Never place credentials in accessory context, screenshots, issue bodies, command-line arguments or published fixtures. Development probes use the already ignored `.secrets/` mechanism and ordinary tests use synthetic accounts only.
 
 Prefer a separately registered Aqua Temp account with the device shared to it. This was observed to support reads on the owner's heater and avoids deliberately reusing the mobile account; it does not guarantee freedom from vendor session contention. Keep the previous integration disabled before running another integration against the same account/device.
