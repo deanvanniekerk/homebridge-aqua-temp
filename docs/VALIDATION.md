@@ -45,6 +45,8 @@ Maximum simultaneous server sockets was two; active timer resources peaked at fi
 
 The production-only packed host performs five lifecycles (normal cold/warm/recovery and child-bridge cold/warm). Each cycle reads water/target, writes 32.5°C, turns On and Off, restores 32°C, then injects an acknowledged-but-ignored target request. The latter returns a HAP communication error and preserves reported 32°C. It asserts exactly five explicit writes per lifecycle and no startup, restart or shutdown writes. The observed HAP target range is 15–38°C / 0.5°C, and identity persists across same-bridge restarts.
 
+The initial ARMv7 control runs exposed a startup race in the package test: HAP snapshots characteristic metadata before awaiting getters, so discovery can contain fresh temperature values alongside earlier read-only metadata. The harness now waits for writable target permissions before exercising controls, then independently asserts the exact bounds and step. No timeout, retry budget or production behavior was changed to address this failure.
+
 ## Clock-correction regression
 
 A real HTTP regression test moves `Date.now()` back one day while leaving the process monotonic clock intact. Before the fix, the newly acquired sample was immediately classified as stale. The gateway and diagnostics now use the same default monotonic epoch clock as the coordinator. The test verifies fresh state and a one-minute diagnostic age under the clock correction. This fixes mixed-clock freshness accounting; it does not infer vendor measurement timestamps.

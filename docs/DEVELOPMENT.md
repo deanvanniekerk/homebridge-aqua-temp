@@ -56,7 +56,7 @@ This requires a clean committed checkout and a local Unix-socket Docker context.
 
 ## Identity, packaging and publication
 
-Provisional identity: `@deanvanniekerk/homebridge-aqua-temp`, version `0.0.0-development.0`. GitHub ownership does not prove npm scope ownership. The platform alias is `AquaTemp`; use it only for development runs while control integration and protocol verification remain incomplete.
+Provisional identity: `@deanvanniekerk/homebridge-aqua-temp`, version `0.0.0-development.0`. GitHub ownership does not prove npm scope ownership. The platform alias is `AquaTemp`; use it for development evaluation of the [supported control subset](DEVICE_MODEL.md#supported-control-subset-and-limitations) while hardware validation and release preparation remain open.
 
 The package allowlist includes compiled JavaScript and `config.schema.json`; npm also includes package metadata, README and LICENSE. Build output is disposable and not committed. The schema and runtime parser require credentials and accept optional device IDs, poll interval and debug settings. Development smoke tests supply synthetic credentials: test-host-only routing redirects the vendor origin to a loopback fake HTTP server. Production code has no test-origin setting; the routing helper is excluded from the tarball.
 
