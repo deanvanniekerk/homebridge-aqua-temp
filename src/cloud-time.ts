@@ -85,6 +85,8 @@ export class Budget {
 
   dispose(): void {
     clearTimeout(this.#timer);
+    // Also destroy work if an elapsed-clock check beat the timer's event-loop turn.
+    this.#timeout.abort();
   }
 }
 
