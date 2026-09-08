@@ -1,6 +1,6 @@
 # Coordinator implementation status
 
-Issue #6 is in progress on top of the unfinished issue #5 model. The polling portion now owns one account loop, a 30-second cycle budget, 60-second default completion-to-next-start interval (30–300 seconds permitted), and a three-interval reading freshness boundary. An injected scheduler makes these deadlines testable without wall-clock waits.
+The coordinator implements the polling, freshness and ordered-command mechanisms in issue #6. It owns one account loop, a 30-second cycle budget, 60-second default completion-to-next-start interval (30–300 seconds permitted), and a three-interval reading freshness boundary. An injected scheduler makes these deadlines testable without wall-clock waits.
 
 The gateway is a typed boundary for discovery and validated device readings. A successful online sample replaces a device's state. Transient failures preserve its last valid sample until the freshness boundary; the failure category is retained separately. Offline, authentication, permission and invalid-protocol failures have distinct states. Device failures are isolated. Discovery omissions and partial results do not remove devices; previously discovered identities continue to be read. Cloud retry timing can postpone the next poll without extending reading freshness.
 
@@ -26,11 +26,11 @@ The provisional confirmation mechanism performs one read after transport accepta
 
 Polls carry per-device revisions. Reads and failures from before a command, or while a command is active, cannot replace a newer command result. Retry-After remains an account-wide timing constraint even when the poll's device-state result is obsolete. Command completion requests a fresh account poll without overlapping an existing cycle or bypassing Retry-After. If an operation finishes after cancellation, it invalidates polls started before that late completion and requests read-only reconciliation; it cannot complete the expired setter, publish its late readback, or repeat the write. Later app changes are adopted through ordinary polling.
 
-## Remaining work
+## Integration boundaries
 
-- Verified physical command/readback mappings and any evidence-based adjustment to confirmation timing.
-- Owner-assisted confirmation of pagination behavior if a multi-page account becomes available.
-- Connection of the state stream to Homebridge accessory updates and runtime diagnostics.
-- Full integration/fault tests and final review before publication.
+- Physical controls remain gated on the verified command/readback mappings in issue #5 and their Homebridge integration in issue #7. Vendor evidence may require adjustments to confirmation timing.
+- Multi-page discovery remains an engineering assumption until an account with multiple pages is available for observation.
+- The Homebridge adapter and runtime diagnostics consume the state stream in the subsequent issue #7 and #8 delivery changes.
+- Full control-path integration and fault validation remains part of issue #9.
 
-Command completion policy depends on the evidence gates in [DEVICE_MODEL.md](DEVICE_MODEL.md). The polling and synthetic command tests do not prove these missing features. No PR has been opened or issue closed for this partial work.
+Command completion policy depends on the evidence gates in [DEVICE_MODEL.md](DEVICE_MODEL.md). Completion of the coordinator mechanism does not establish physical actuation or remove those gates; its polling and synthetic command tests prove only the behavior at the injected gateway boundary.
