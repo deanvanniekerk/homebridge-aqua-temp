@@ -1,0 +1,12 @@
+{
+  "pluginAlias": "AquaTemp",
+  "pluginType": "platform",
+  "singular": true,
+  "headerDisplay": "Development foundation only. Heat pump discovery and controls are not implemented. Do not enter cloud credentials yet.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": { "title": "Name", "type": "string", "default": "Aqua Temp" }
+    }
+  }
+}
