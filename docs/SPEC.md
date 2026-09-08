@@ -45,6 +45,8 @@ Read-only access can establish telemetry but cannot prove write permissions or a
 
 If a core feature cannot be implemented faithfully, record the evidence and resolve that product limitation before shipping; do not conceal it with a guessed value.
 
+Owner clarification, 2026-09-08: no matching manual is available; the owner will assist with manual tests. Support is limited to the behavior those tests establish. Behavior beyond that boundary is explicitly unknown or unsupported. This permits a documented, verified subset of capabilities rather than requiring every vendor state or parameter to be decoded. It does not permit guessed activity, invented temperature constraints, or describing an incomplete control path as implemented. Unverified defrost/flow/protection encodings do not require deliberately inducing those conditions; they must remain unknown and must not be advertised as detected.
+
 ## 4. Apple Home behavior
 
 Use Homebridge's supplied HAP API and a standard Thermostat service as the proposed Apple Home representation. Validate this choice against the verified device profile and actual Apple Home UI during integration.

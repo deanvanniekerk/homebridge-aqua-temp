@@ -1,0 +1,591 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T17:39:20.314Z",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/device/getDataByCode",
+    "method": "Owner-authorized read-only POST through the original cloud client; TLS validation enabled; bounded 15-second acquisition.",
+    "scope": "Single online supported BOOSTi-INV-HP-40, following owner app 2.2.2 status-parameter screenshots.",
+    "redaction": "Only requested codes, numeric-or-empty values and allowlisted metadata; no account/device identifiers or raw responses.",
+    "limitations": "Later cloud sample, not simultaneous with screenshots. Labels are separately transcribed in docs/APP_PARAMETERS.md. Empty values do not mean zero; null means omitted by projection. No writes and no active/defrost/fault-state experiment."
+  },
+  "codes": [
+    "Power",
+    "Power_State",
+    "Mode",
+    "Set_Temp",
+    "R02",
+    "O01",
+    "O02",
+    "O03",
+    "O04",
+    "O05",
+    "O06",
+    "O07",
+    "O08",
+    "O09",
+    "O10",
+    "O11",
+    "O12",
+    "O13",
+    "O14",
+    "O15",
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "T01",
+    "T02",
+    "T03",
+    "T04",
+    "T05",
+    "T06",
+    "T07",
+    "T08",
+    "T09",
+    "T10",
+    "T11",
+    "T12",
+    "T13",
+    "T14",
+    "T15",
+    "T16",
+    "T17",
+    "T18",
+    "T19",
+    "T20",
+    "T21",
+    "T22",
+    "T23",
+    "T24",
+    "T25",
+    "T26",
+    "T27",
+    "T28",
+    "Z01",
+    "Z02",
+    "Z03",
+    "Z04",
+    "Z05",
+    "Z06",
+    "Z07",
+    "software_code",
+    "2037",
+    "2038",
+    "2039",
+    "2057",
+    "2058",
+    "2059",
+    "2064",
+    "2086"
+  ],
+  "normalizedContext": {
+    "connectivity": "online",
+    "power": {
+      "available": true,
+      "value": "off"
+    },
+    "mode": {
+      "available": true,
+      "value": "heat"
+    },
+    "reportedTargetCelsius": {
+      "available": true,
+      "value": 32
+    }
+  },
+  "telemetry": [
+    {
+      "code": "Power",
+      "value": "0",
+      "dataType": "ENUM",
+      "rangeStart": "0",
+      "rangeEnd": "1"
+    },
+    {
+      "code": "Power_State",
+      "value": "0",
+      "dataType": "ENUM",
+      "rangeStart": "0",
+      "rangeEnd": "1"
+    },
+    {
+      "code": "Mode",
+      "value": "1",
+      "dataType": "ENUM",
+      "rangeStart": "0",
+      "rangeEnd": "2"
+    },
+    {
+      "code": "Set_Temp",
+      "value": "32.0",
+      "dataType": "TEMP",
+      "rangeStart": "0",
+      "rangeEnd": "99"
+    },
+    {
+      "code": "R02",
+      "value": "32.0",
+      "dataType": "TEMP",
+      "rangeStart": "15.00",
+      "rangeEnd": "40.00"
+    },
+    {
+      "code": "O01",
+      "value": "",
+      "dataType": "",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "O02",
+      "value": "",
+      "dataType": "",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "O03",
+      "value": "",
+      "dataType": "",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "O04",
+      "value": "",
+      "dataType": "",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "O05",
+      "value": "",
+      "dataType": "",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "O06",
+      "value": "250",
+      "dataType": null,
+      "rangeStart": "0",
+      "rangeEnd": "500"
+    },
+    {
+      "code": "O07",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "0",
+      "rangeEnd": "120"
+    },
+    {
+      "code": "O08",
+      "value": "0.1",
+      "dataType": null,
+      "rangeStart": "0",
+      "rangeEnd": "50"
+    },
+    {
+      "code": "O09",
+      "value": "24.0",
+      "dataType": "TEMP",
+      "rangeStart": "-55",
+      "rangeEnd": "200"
+    },
+    {
+      "code": "O10",
+      "value": "1",
+      "dataType": null,
+      "rangeStart": "0",
+      "rangeEnd": "65535"
+    },
+    {
+      "code": "O11",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "0",
+      "rangeEnd": "65535"
+    },
+    {
+      "code": "O12",
+      "value": "5",
+      "dataType": null,
+      "rangeStart": "0",
+      "rangeEnd": "65535"
+    },
+    {
+      "code": "O13",
+      "value": "",
+      "dataType": "",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "O14",
+      "value": "0.0",
+      "dataType": "TEMP",
+      "rangeStart": "0",
+      "rangeEnd": "100"
+    },
+    {
+      "code": "O15",
+      "value": "0.0",
+      "dataType": "TEMP",
+      "rangeStart": "0",
+      "rangeEnd": "100"
+    },
+    {
+      "code": "S01",
+      "value": "",
+      "dataType": "",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "S02",
+      "value": "",
+      "dataType": "",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "S03",
+      "value": "",
+      "dataType": "",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "S04",
+      "value": "",
+      "dataType": "",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "S05",
+      "value": "",
+      "dataType": "",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "S06",
+      "value": "",
+      "dataType": "",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T01",
+      "value": "23.5",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T02",
+      "value": "21.5",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T03",
+      "value": "23.0",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T04",
+      "value": "21.0",
+      "dataType": "TEMP",
+      "rangeStart": "-30",
+      "rangeEnd": "100"
+    },
+    {
+      "code": "T05",
+      "value": "21.5",
+      "dataType": "TEMP",
+      "rangeStart": "-30",
+      "rangeEnd": "100"
+    },
+    {
+      "code": "T06",
+      "value": "24.0",
+      "dataType": "TEMP",
+      "rangeStart": "-30",
+      "rangeEnd": "100"
+    },
+    {
+      "code": "T07",
+      "value": "1",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T08",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T09",
+      "value": "0.0",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T10",
+      "value": "12.6",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T11",
+      "value": "0.0",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T12",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T13",
+      "value": "4.0",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T14",
+      "value": "230",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T15",
+      "value": "0.0",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T16",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T17",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T18",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T19",
+      "value": "314",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T20",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T21",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T22",
+      "value": "0.0",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T23",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T24",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T25",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T26",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T27",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "T28",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "Z01",
+      "value": "0.0",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "Z02",
+      "value": "0.0",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "Z03",
+      "value": "0.0",
+      "dataType": "TEMP",
+      "rangeStart": "0",
+      "rangeEnd": "65535"
+    },
+    {
+      "code": "Z04",
+      "value": "0.0",
+      "dataType": null,
+      "rangeStart": "0",
+      "rangeEnd": "100"
+    },
+    {
+      "code": "Z05",
+      "value": "0.0",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "Z06",
+      "value": "0.0",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "Z07",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "0",
+      "rangeEnd": "65535"
+    },
+    {
+      "code": "software_code",
+      "value": "156",
+      "dataType": null,
+      "rangeStart": "0",
+      "rangeEnd": "65535"
+    },
+    {
+      "code": "2037",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "2038",
+      "value": "0.0",
+      "dataType": "TEMP",
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "2039",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "2057",
+      "value": "0.0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "2058",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "2059",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "2064",
+      "value": "0",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    },
+    {
+      "code": "2086",
+      "value": "46",
+      "dataType": null,
+      "rangeStart": "",
+      "rangeEnd": ""
+    }
+  ]
+}
