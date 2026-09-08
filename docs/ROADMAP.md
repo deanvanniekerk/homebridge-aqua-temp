@@ -2,7 +2,7 @@
 
 Each issue contains scope, dependencies, acceptance criteria and a verification deliverable. [SPEC.md](SPEC.md) defines the shared product and engineering contract.
 
-The repository contains the specification and [runtime compatibility findings](COMPATIBILITY.md). Plugin implementation is still pending; the linked issues track each work item's current status.
+The repository contains the specification and [runtime compatibility findings](COMPATIBILITY.md). [Protocol discovery](PROTOCOL.md) records verified account/device observations and the unresolved activity/control gates for issue #2. Plugin implementation is still pending; the linked issues track each work item's current status.
 
 | Issue | Work | Depends on |
 | --- | --- | --- |

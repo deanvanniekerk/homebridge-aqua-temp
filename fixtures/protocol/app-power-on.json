@@ -304,6 +304,35 @@
       }
     },
     {
+      "step": "app-off-restored-status",
+      "observedAt": "2026-09-08T12:10:43.691806+00:00",
+      "request": {
+        "method": "POST",
+        "path": "/crmservice/api/app/device/getDeviceStatus",
+        "headers": {
+          "x-token": "REDACTED_SHARED_TOKEN"
+        },
+        "body": {
+          "userId": "SHARED_ACCOUNT_1",
+          "appId": "14",
+          "deviceCode": "DEVICE_CODE_1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json;charset=UTF-8",
+        "bodyProjection": {
+          "error_code": "0",
+          "isReusltSuc": true,
+          "objectResult": {
+            "status": "ONLINE",
+            "isFault": false,
+            "is_fault": false
+          }
+        }
+      }
+    },
+    {
       "step": "app-off-restored",
       "observedAt": "2026-09-08T12:10:44.371366+00:00",
       "response": {

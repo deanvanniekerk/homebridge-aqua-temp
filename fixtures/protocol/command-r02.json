@@ -6,7 +6,7 @@
     "method": "Owner-approved 32°C to 31°C to 32°C experiment using dedicated shared account; TLS verified, redirects disabled, timeout 10 seconds, response limit 1 MB",
     "scope": "Selected BOOSTi-INV-HP-40 only; no power or mode commands; each target command sent once with bounded reads before restoration",
     "redaction": "Allowlisted request/envelope/status/parameter fields; account, token and device references replaced; raw private observations retained outside tracked files",
-    "limitations": "Request timestamps are client acquisition times, not device measurement times. Readback may be cloud cache. App observer confirmed seeing 31°C and return to 32°C across the experiments but did not identify which command sequence. Owner corrected the starting state to app toggle Off with mains/Wi-Fi available, matching Power 0 and compressor Standby. On-state encoding and behavior during active heating remain unresolved."
+    "limitations": "Request timestamps are client acquisition times, not device measurement times. Readback may be cloud cache. App observer confirmed seeing 31°C and return to 32°C across the experiments but did not identify which command sequence. Owner corrected the starting state to app toggle Off with mains/Wi-Fi available, matching Power 0 and compressor Standby. On-state encoding was unresolved at the time of these experiments; app-power-on.json subsequently establishes Power 1 = app On. Target-write behavior during active heating remains unresolved."
   },
   "events": [
     {

@@ -8,6 +8,7 @@ The first release will bring water temperature, target temperature, on/off contr
 
 - [Product and engineering specification](docs/SPEC.md)
 - [Observed deployment and runtime compatibility](docs/COMPATIBILITY.md)
+- [Protocol observations and unresolved device controls](docs/PROTOCOL.md)
 - [Implementation roadmap](docs/ROADMAP.md)
 - [MIT license](LICENSE)
 
