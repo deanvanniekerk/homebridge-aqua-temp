@@ -2,7 +2,7 @@
 
 Each issue contains scope, dependencies, acceptance criteria and a verification deliverable. [SPEC.md](SPEC.md) defines the shared product and engineering contract.
 
-The repository currently contains planning documents only. All implementation and validation work below is outstanding.
+The repository contains the specification and [runtime compatibility findings](COMPATIBILITY.md). Plugin implementation is still pending; the linked issues track each work item's current status.
 
 | Issue | Work | Depends on |
 | --- | --- | --- |
