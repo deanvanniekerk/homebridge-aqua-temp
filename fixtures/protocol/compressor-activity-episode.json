@@ -1,0 +1,277 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/device/getDataByCode",
+    "method": "Owner-authorized read-only HTTPS POST through shared account; TLS verified, redirects disabled, bounded response and timeout",
+    "scope": "Selected BOOSTi-INV-HP-40 during owner-operated On/Off experiment",
+    "redaction": "Only allowlisted parameter fields retained; account/device/token values omitted or replaced; screenshot kept private",
+    "limitations": "The app reported compressor status 38%, but captures were not synchronized. Initial read required session renewal. Later selector read already had Power 0, around owner-confirmed Off transition. No field can be declared compressor percentage from these samples. Supplemental T-series selectors were read-only hypotheses, not documented mappings."
+  },
+  "ownerObservation": {
+    "appCompressorStatus": "38%",
+    "subsequentAction": "Owner switched app toggle Off"
+  },
+  "events": [
+    {
+      "step": "after-app-38-report",
+      "observedAt": "2026-09-08T12:09:57.157953+00:00",
+      "request": {
+        "method": "POST",
+        "path": "/crmservice/api/app/device/getDataByCode",
+        "authentication": "dedicated shared account; token omitted",
+        "device": "DEVICE_CODE_1",
+        "protocalCodes": [
+          "T03",
+          "T04",
+          "T05",
+          "T07",
+          "T12",
+          "T14",
+          "T17",
+          "O01",
+          "ModeState",
+          "H03",
+          "2074",
+          "2075",
+          "2076",
+          "2077"
+        ]
+      },
+      "response": {
+        "status": 200,
+        "bodyProjection": {
+          "error_code": "0",
+          "isReusltSuc": true,
+          "objectResult": [
+            {
+              "code": "T03",
+              "value": "21.0",
+              "dataType": "TEMP",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "T04",
+              "value": "27.5",
+              "dataType": "TEMP",
+              "rangeStart": "-30",
+              "rangeEnd": "100"
+            },
+            {
+              "code": "T05",
+              "value": "31.0",
+              "dataType": "TEMP",
+              "rangeStart": "-30",
+              "rangeEnd": "100"
+            },
+            {
+              "code": "T07",
+              "value": "22",
+              "dataType": "DIGI1",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "T12",
+              "value": "675",
+              "dataType": "DIGI1",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "T14",
+              "value": "238",
+              "dataType": "DIGI1",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "T17",
+              "value": "720",
+              "dataType": "DIGI1",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "O01",
+              "value": "",
+              "dataType": "",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "ModeState",
+              "value": "1",
+              "dataType": "ENUM",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "H03",
+              "value": "0",
+              "dataType": "ENUM",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "2074",
+              "value": "0000000000000000",
+              "dataType": "BINARY",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "2075",
+              "value": "0000000000000000",
+              "dataType": "BINARY",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "2076",
+              "value": "0000000000000000",
+              "dataType": "BINARY",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "2077",
+              "value": "0000000000000000",
+              "dataType": "BINARY",
+              "rangeStart": "",
+              "rangeEnd": ""
+            }
+          ]
+        },
+        "contentType": "application/json;charset=UTF-8"
+      }
+    },
+    {
+      "step": "additional-selectors-around-off-transition",
+      "observedAt": "2026-09-08T12:10:18.637963+00:00",
+      "request": {
+        "method": "POST",
+        "path": "/crmservice/api/app/device/getDataByCode",
+        "authentication": "dedicated shared account; token omitted",
+        "device": "DEVICE_CODE_1",
+        "protocalCodes": [
+          "Power",
+          "Mode",
+          "Set_Temp",
+          "R02",
+          "T02",
+          "T06",
+          "T08",
+          "T09",
+          "T10",
+          "T11",
+          "T13",
+          "T15",
+          "T16"
+        ]
+      },
+      "response": {
+        "status": 200,
+        "bodyProjection": {
+          "error_code": "0",
+          "isReusltSuc": true,
+          "objectResult": [
+            {
+              "code": "Power",
+              "value": "0",
+              "dataType": "ENUM",
+              "rangeStart": "0",
+              "rangeEnd": "1"
+            },
+            {
+              "code": "Mode",
+              "value": "1",
+              "dataType": "ENUM",
+              "rangeStart": "0",
+              "rangeEnd": "2"
+            },
+            {
+              "code": "Set_Temp",
+              "value": "32.0",
+              "dataType": "TEMP",
+              "rangeStart": "0",
+              "rangeEnd": "99"
+            },
+            {
+              "code": "R02",
+              "value": "32.0",
+              "dataType": "TEMP",
+              "rangeStart": "15.00",
+              "rangeEnd": "40.00"
+            },
+            {
+              "code": "T02",
+              "value": "20.5",
+              "dataType": "TEMP",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "T06",
+              "value": "25.0",
+              "dataType": "TEMP",
+              "rangeStart": "-30",
+              "rangeEnd": "100"
+            },
+            {
+              "code": "T08",
+              "value": "0",
+              "dataType": "DIGI1",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "T09",
+              "value": "0.0",
+              "dataType": "TEMP",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "T10",
+              "value": "10.4",
+              "dataType": "DIGI5",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "T11",
+              "value": "15.0",
+              "dataType": "TEMP",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "T13",
+              "value": "4.0",
+              "dataType": "TEMP",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "T15",
+              "value": "0.0",
+              "dataType": "TEMP",
+              "rangeStart": "",
+              "rangeEnd": ""
+            },
+            {
+              "code": "T16",
+              "value": "0",
+              "dataType": "DIGI1",
+              "rangeStart": "",
+              "rangeEnd": ""
+            }
+          ]
+        },
+        "contentType": "application/json;charset=UTF-8"
+      }
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T11:30:45.249798+00:00",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/device/getDataByCode",
+    "method": "Owner-authorized HTTPS POST; certificate validation enabled; redirects disabled; 20-second timeout; 1 MB response limit",
+    "scope": "Read-only discovery of the supplied account and its one visible heater",
+    "redaction": "Envelope projected to status fields; device/account values replaced with placeholders",
+    "limitations": "No parameter selection was supplied; an empty result does not establish telemetry fields, missing capabilities or why no values were returned"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/crmservice/api/app/device/getDataByCode",
+    "headers": {
+      "x-token": "REDACTED_TOKEN"
+    },
+    "body": {
+      "userId": "ACCOUNT_1",
+      "appId": "14",
+      "deviceCode": "DEVICE_CODE_1"
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json;charset=UTF-8",
+    "bodyProjection": {
+      "error_code": "0",
+      "isReusltSuc": true,
+      "objectResult": []
+    }
+  }
+}

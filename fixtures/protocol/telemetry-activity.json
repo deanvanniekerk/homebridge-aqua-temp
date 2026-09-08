@@ -1,0 +1,176 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T11:50:13.445227+00:00",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/device/getDataByCode",
+    "method": "Owner-authorized HTTPS POST; certificate validation enabled; redirects disabled; 20-second timeout; 1 MB response limit",
+    "scope": "Read-only observation of the account-visible BOOSTi-INV-HP-40 after the owner restored connectivity",
+    "redaction": "Response projected to allowlisted envelope and parameter/status fields; request account/device/token values replaced with placeholders; no names, location, serials or raw traffic",
+    "limitations": "Candidate selectors only; observed numbers/bits do not establish compressor, defrost, flow or fault semantics. No measurement timestamp or direct activity label was returned. O01 has an empty value and metadata."
+  },
+  "request": {
+    "method": "POST",
+    "path": "/crmservice/api/app/device/getDataByCode",
+    "headers": {
+      "x-token": "REDACTED_TOKEN"
+    },
+    "body": {
+      "deviceCode": "DEVICE_CODE_1",
+      "protocalCodes": [
+        "T03",
+        "T04",
+        "T05",
+        "T07",
+        "T12",
+        "T14",
+        "T17",
+        "O01",
+        "ModeState",
+        "H03",
+        "2074",
+        "2075",
+        "2076",
+        "2077"
+      ],
+      "userId": "ACCOUNT_1",
+      "appId": "14"
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json;charset=UTF-8",
+    "bodyProjection": {
+      "error_code": "0",
+      "isReusltSuc": true,
+      "objectResult": [
+        {
+          "code": "T03",
+          "value": "21.0",
+          "dataType": "TEMP",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "T04",
+          "value": "29.5",
+          "dataType": "TEMP",
+          "rangeStart": "-30",
+          "rangeEnd": "100",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "T05",
+          "value": "36.0",
+          "dataType": "TEMP",
+          "rangeStart": "-30",
+          "rangeEnd": "100",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "T07",
+          "value": "1",
+          "dataType": "DIGI1",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "T12",
+          "value": "0",
+          "dataType": "DIGI1",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "T14",
+          "value": "236",
+          "dataType": "DIGI1",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "T17",
+          "value": "0",
+          "dataType": "DIGI1",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "O01",
+          "value": "",
+          "dataType": "",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": "",
+          "dataTypeAi": null
+        },
+        {
+          "code": "ModeState",
+          "value": "1",
+          "dataType": "ENUM",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "H03",
+          "value": "0",
+          "dataType": "ENUM",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "2074",
+          "value": "0000000000000000",
+          "dataType": "BINARY",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "binary"
+        },
+        {
+          "code": "2075",
+          "value": "0000000000000000",
+          "dataType": "BINARY",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "binary"
+        },
+        {
+          "code": "2076",
+          "value": "0000000000000000",
+          "dataType": "BINARY",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "binary"
+        },
+        {
+          "code": "2077",
+          "value": "0000000000000000",
+          "dataType": "BINARY",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "binary"
+        }
+      ]
+    }
+  }
+}

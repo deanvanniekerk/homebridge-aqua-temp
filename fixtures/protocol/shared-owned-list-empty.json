@@ -1,0 +1,32 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T11:52:39.838909+00:00",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/device/deviceList",
+    "method": "Owner-authorized read-only HTTPS POST; TLS verified; no redirects; 20-second timeout; 1 MB response limit",
+    "scope": "Dedicated shared account confirmed by owner; this heater only",
+    "redaction": "Envelope projection; account and token replaced",
+    "limitations": "Empty deviceList does not establish that no accepted shares exist"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/crmservice/api/app/device/deviceList",
+    "headers": {
+      "x-token": "REDACTED_SHARED_TOKEN"
+    },
+    "body": {
+      "userId": "SHARED_ACCOUNT_1",
+      "appId": "14"
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json;charset=UTF-8",
+    "bodyProjection": {
+      "error_code": "0",
+      "isReusltSuc": true,
+      "objectResult": []
+    }
+  }
+}

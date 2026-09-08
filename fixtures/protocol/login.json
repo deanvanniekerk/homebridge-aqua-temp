@@ -1,0 +1,39 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T11:26:56.789464+00:00",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/user/login",
+    "method": "Owner-authorized HTTPS POST; certificate validation enabled; redirects disabled; 20-second timeout; 1 MB response limit",
+    "scope": "Read-only discovery of the supplied account and its one visible heater",
+    "redaction": "Allowlisted result fields; account ID, token and access key replaced with explicit placeholders; all names and other fields omitted",
+    "limitations": "One working request, not proof that every supplied field is required; no session lifetime/refresh or installed mobile version established",
+    "timestampBasis": "Local observation file modification time; acquisition time was not separately recorded"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/crmservice/api/app/user/login",
+    "authentication": "none",
+    "bodyShape": {
+      "userName": "local username string; value omitted",
+      "password": "lowercase hexadecimal MD5 digest of UTF-8 password; value omitted",
+      "type": "2"
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json;charset=UTF-8",
+    "bodyProjection": {
+      "error_code": "0",
+      "isReusltSuc": true,
+      "objectResult": {
+        "appId": "14",
+        "user_type": "Customer",
+        "userId": "ACCOUNT_1",
+        "user_id": "ACCOUNT_1",
+        "x-token": "REDACTED_TOKEN",
+        "accessKey": "REDACTED_ACCESS_KEY"
+      }
+    }
+  }
+}

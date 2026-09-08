@@ -1,0 +1,412 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/device/getDataByCode",
+    "method": "Authenticated HTTPS POST reads through the dedicated shared account; TLS verified and redirects disabled. Owner switched the selected heater On through Aqua Temp between baseline and On observations.",
+    "scope": "BOOSTi-INV-HP-40; mode and target left unchanged; no assistant-issued power command",
+    "redaction": "Response projected to numeric/enum parameter codes and values; all request account, device and token values omitted",
+    "limitations": "Owner-operated transition verifies read encoding Power 0=app Off and Power 1=app On for this profile. It does not verify the API power-write contract, physical compressor activity, parameter units or delayed faults. Read values may be cloud cache."
+  },
+  "events": [
+    {
+      "step": "app-off-baseline",
+      "observedAt": "2026-09-08T12:06:27.934461+00:00",
+      "response": {
+        "status": 200,
+        "bodyProjection": {
+          "error_code": "0",
+          "isReusltSuc": true,
+          "objectResult": [
+            {
+              "code": "Power",
+              "value": "0"
+            },
+            {
+              "code": "Mode",
+              "value": "1"
+            },
+            {
+              "code": "Set_Temp",
+              "value": "32.0"
+            },
+            {
+              "code": "T01",
+              "value": "27.5"
+            },
+            {
+              "code": "T02",
+              "value": "20.5"
+            },
+            {
+              "code": "T1",
+              "value": ""
+            },
+            {
+              "code": "T2",
+              "value": ""
+            },
+            {
+              "code": "R01",
+              "value": "0.0"
+            },
+            {
+              "code": "R02",
+              "value": "32.0"
+            },
+            {
+              "code": "R03",
+              "value": "30.0"
+            },
+            {
+              "code": "R08",
+              "value": "8.0"
+            },
+            {
+              "code": "R09",
+              "value": "35.0"
+            },
+            {
+              "code": "R10",
+              "value": "15.0"
+            },
+            {
+              "code": "R11",
+              "value": "40.0"
+            }
+          ]
+        },
+        "contentType": "application/json;charset=UTF-8"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/crmservice/api/app/device/getDataByCode",
+        "headers": {
+          "x-token": "REDACTED_SHARED_TOKEN"
+        },
+        "body": {
+          "userId": "SHARED_ACCOUNT_1",
+          "appId": "14",
+          "deviceCode": "DEVICE_CODE_1",
+          "protocalCodes": [
+            "Power",
+            "Mode",
+            "Set_Temp",
+            "T01",
+            "T02",
+            "T1",
+            "T2",
+            "R01",
+            "R02",
+            "R03",
+            "R08",
+            "R09",
+            "R10",
+            "R11"
+          ]
+        }
+      }
+    },
+    {
+      "step": "app-on-core",
+      "observedAt": "2026-09-08T12:06:58.819939+00:00",
+      "response": {
+        "status": 200,
+        "bodyProjection": {
+          "error_code": "0",
+          "isReusltSuc": true,
+          "objectResult": [
+            {
+              "code": "Power",
+              "value": "1"
+            },
+            {
+              "code": "Mode",
+              "value": "1"
+            },
+            {
+              "code": "Set_Temp",
+              "value": "32.0"
+            },
+            {
+              "code": "T01",
+              "value": "27.5"
+            },
+            {
+              "code": "T02",
+              "value": "20.5"
+            },
+            {
+              "code": "T1",
+              "value": ""
+            },
+            {
+              "code": "T2",
+              "value": ""
+            },
+            {
+              "code": "R01",
+              "value": "0.0"
+            },
+            {
+              "code": "R02",
+              "value": "32.0"
+            },
+            {
+              "code": "R03",
+              "value": "30.0"
+            },
+            {
+              "code": "R08",
+              "value": "8.0"
+            },
+            {
+              "code": "R09",
+              "value": "35.0"
+            },
+            {
+              "code": "R10",
+              "value": "15.0"
+            },
+            {
+              "code": "R11",
+              "value": "40.0"
+            }
+          ]
+        },
+        "contentType": "application/json;charset=UTF-8"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/crmservice/api/app/device/getDataByCode",
+        "headers": {
+          "x-token": "REDACTED_SHARED_TOKEN"
+        },
+        "body": {
+          "userId": "SHARED_ACCOUNT_1",
+          "appId": "14",
+          "deviceCode": "DEVICE_CODE_1",
+          "protocalCodes": [
+            "Power",
+            "Mode",
+            "Set_Temp",
+            "T01",
+            "T02",
+            "T1",
+            "T2",
+            "R01",
+            "R02",
+            "R03",
+            "R08",
+            "R09",
+            "R10",
+            "R11"
+          ]
+        }
+      }
+    },
+    {
+      "step": "app-on-activity",
+      "observedAt": "2026-09-08T12:07:09.035403+00:00",
+      "response": {
+        "status": 200,
+        "bodyProjection": {
+          "error_code": "0",
+          "isReusltSuc": true,
+          "objectResult": [
+            {
+              "code": "T03",
+              "value": "21.0"
+            },
+            {
+              "code": "T04",
+              "value": "29.5"
+            },
+            {
+              "code": "T05",
+              "value": "34.5"
+            },
+            {
+              "code": "T07",
+              "value": "1"
+            },
+            {
+              "code": "T12",
+              "value": "0"
+            },
+            {
+              "code": "T14",
+              "value": "236"
+            },
+            {
+              "code": "T17",
+              "value": "0"
+            },
+            {
+              "code": "O01",
+              "value": ""
+            },
+            {
+              "code": "ModeState",
+              "value": "1"
+            },
+            {
+              "code": "H03",
+              "value": "0"
+            },
+            {
+              "code": "2074",
+              "value": "0000000000000000"
+            },
+            {
+              "code": "2075",
+              "value": "0000000000000000"
+            },
+            {
+              "code": "2076",
+              "value": "0000000000000000"
+            },
+            {
+              "code": "2077",
+              "value": "0000000000000000"
+            }
+          ]
+        },
+        "contentType": "application/json;charset=UTF-8"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/crmservice/api/app/device/getDataByCode",
+        "headers": {
+          "x-token": "REDACTED_SHARED_TOKEN"
+        },
+        "body": {
+          "userId": "SHARED_ACCOUNT_1",
+          "appId": "14",
+          "deviceCode": "DEVICE_CODE_1",
+          "protocalCodes": [
+            "T03",
+            "T04",
+            "T05",
+            "T07",
+            "T12",
+            "T14",
+            "T17",
+            "O01",
+            "ModeState",
+            "H03",
+            "2074",
+            "2075",
+            "2076",
+            "2077"
+          ]
+        }
+      }
+    },
+    {
+      "step": "app-off-restored",
+      "observedAt": "2026-09-08T12:10:44.371366+00:00",
+      "response": {
+        "status": 200,
+        "bodyProjection": {
+          "error_code": "0",
+          "isReusltSuc": true,
+          "objectResult": [
+            {
+              "code": "Power",
+              "value": "0"
+            },
+            {
+              "code": "Mode",
+              "value": "1"
+            },
+            {
+              "code": "Set_Temp",
+              "value": "32.0"
+            },
+            {
+              "code": "T01",
+              "value": "28.0"
+            },
+            {
+              "code": "T02",
+              "value": "20.5"
+            },
+            {
+              "code": "T1",
+              "value": ""
+            },
+            {
+              "code": "T2",
+              "value": ""
+            },
+            {
+              "code": "R01",
+              "value": "0.0"
+            },
+            {
+              "code": "R02",
+              "value": "32.0"
+            },
+            {
+              "code": "R03",
+              "value": "30.0"
+            },
+            {
+              "code": "R08",
+              "value": "8.0"
+            },
+            {
+              "code": "R09",
+              "value": "35.0"
+            },
+            {
+              "code": "R10",
+              "value": "15.0"
+            },
+            {
+              "code": "R11",
+              "value": "40.0"
+            }
+          ]
+        },
+        "contentType": "application/json;charset=UTF-8"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/crmservice/api/app/device/getDataByCode",
+        "headers": {
+          "x-token": "REDACTED_SHARED_TOKEN"
+        },
+        "body": {
+          "userId": "SHARED_ACCOUNT_1",
+          "appId": "14",
+          "deviceCode": "DEVICE_CODE_1",
+          "protocalCodes": [
+            "Power",
+            "Mode",
+            "Set_Temp",
+            "T01",
+            "T02",
+            "T1",
+            "T2",
+            "R01",
+            "R02",
+            "R03",
+            "R08",
+            "R09",
+            "R10",
+            "R11"
+          ]
+        }
+      }
+    }
+  ],
+  "ownerObservation": {
+    "kind": "owner-report-and-screenshot",
+    "appCompressorStatus": "Standby",
+    "timing": "Provided after the captured On readings; not synchronized to individual API samples",
+    "screenshotHandling": "Original remains private; no image or identifying content copied",
+    "laterUpdate": "Owner subsequently reported compressor status 38%, then explicitly confirmed switching the app toggle Off. API restoration read returned Power 0, Mode 1 and both target fields 32.0."
+  }
+}

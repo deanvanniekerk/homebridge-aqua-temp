@@ -1,0 +1,27 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T10:40:33.285781+00:00",
+  "provenance": {
+    "source": "https://cloud.linked-go.com/cloudservice/api/app/user/login.json",
+    "method": "Anonymous HTTPS GET with default TLS validation; redirects disabled",
+    "scope": "Server response to an unsupported or incomplete login request; no account supplied",
+    "redaction": "Response body projected to error_code and error_msg; all other fields omitted",
+    "limitations": "Not a successful-login fixture and not evidence of token expiry, account permissions or device behavior"
+  },
+  "request": {
+    "method": "GET",
+    "origin": "https://cloud.linked-go.com",
+    "path": "/cloudservice/api/app/user/login.json",
+    "authentication": "none",
+    "bodyPresent": false
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json;charset=UTF-8",
+    "bodyProjection": {
+      "error_code": "-1",
+      "error_msg": "could_not_read_json"
+    }
+  }
+}

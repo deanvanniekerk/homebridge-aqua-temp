@@ -1,0 +1,27 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T10:40:34.654006+00:00",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/user/login",
+    "method": "Anonymous HTTPS GET with default TLS validation; redirects disabled",
+    "scope": "Server response to an unsupported or incomplete login request; no account supplied",
+    "redaction": "Response body projected to error_code and error_msg; all other fields omitted",
+    "limitations": "Not a successful-login fixture and not evidence of token expiry, account permissions or device behavior"
+  },
+  "request": {
+    "method": "GET",
+    "origin": "https://cloud.linked-go.com:449",
+    "path": "/crmservice/api/app/user/login",
+    "authentication": "none",
+    "bodyPresent": false
+  },
+  "response": {
+    "status": 405,
+    "contentType": "application/json;charset=UTF-8",
+    "bodyProjection": {
+      "error_code": "-1",
+      "error_msg": "请求方式错误"
+    }
+  }
+}

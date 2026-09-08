@@ -1,0 +1,37 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T11:48:57.493962+00:00",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/device/getDeviceStatus",
+    "method": "Owner-authorized HTTPS POST; certificate validation enabled; redirects disabled; 20-second timeout; 1 MB response limit",
+    "scope": "Read-only observation of the account-visible BOOSTi-INV-HP-40 after the owner restored connectivity",
+    "redaction": "Response projected to allowlisted envelope and parameter/status fields; request account/device/token values replaced with placeholders; no names, location, serials or raw traffic",
+    "limitations": "ONLINE is cloud connectivity, not requested power or compressor activity; no measurement timestamp is included"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/crmservice/api/app/device/getDeviceStatus",
+    "headers": {
+      "x-token": "REDACTED_TOKEN"
+    },
+    "body": {
+      "deviceCode": "DEVICE_CODE_1",
+      "userId": "ACCOUNT_1",
+      "appId": "14"
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json;charset=UTF-8",
+    "bodyProjection": {
+      "error_code": "0",
+      "isReusltSuc": true,
+      "objectResult": {
+        "status": "ONLINE",
+        "isFault": false,
+        "is_fault": false
+      }
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T11:31:48.446898+00:00",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/device/deviceList",
+    "method": "Owner-authorized HTTPS POST; certificate validation enabled; redirects disabled; 20-second timeout; 1 MB response limit",
+    "scope": "Read-only discovery of the supplied account and its one visible heater",
+    "redaction": "Envelope projected to code, success flag and null result; account ID replaced; deliberately invalid header is literal test input, not a credential",
+    "limitations": "Verifies invalid-token rejection only; natural expiry and competing-login invalidation not induced"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/crmservice/api/app/device/deviceList",
+    "headers": {
+      "x-token": "invalid-discovery-fixture-token"
+    },
+    "body": {
+      "userId": "ACCOUNT_1",
+      "appId": "14"
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json;charset=UTF-8",
+    "bodyProjection": {
+      "error_code": "-100",
+      "isReusltSuc": false,
+      "objectResult": null
+    }
+  }
+}

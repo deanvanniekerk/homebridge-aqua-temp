@@ -1,0 +1,176 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T11:49:20.329055+00:00",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/device/getDataByCode",
+    "method": "Owner-authorized HTTPS POST; certificate validation enabled; redirects disabled; 20-second timeout; 1 MB response limit",
+    "scope": "Read-only observation of the account-visible BOOSTi-INV-HP-40 after the owner restored connectivity",
+    "redaction": "Response projected to allowlisted envelope and parameter/status fields; request account/device/token values replaced with placeholders; no names, location, serials or raw traffic",
+    "limitations": "Candidate read selectors were suggested by public interoperability observations; values and metadata are observed from this unit, but sensor meanings, enum labels, Celsius/Fahrenheit, write limits and step need independent validation. Unknown selectors are echoed with empty values, not omitted."
+  },
+  "request": {
+    "method": "POST",
+    "path": "/crmservice/api/app/device/getDataByCode",
+    "headers": {
+      "x-token": "REDACTED_TOKEN"
+    },
+    "body": {
+      "deviceCode": "DEVICE_CODE_1",
+      "protocalCodes": [
+        "Power",
+        "Mode",
+        "Set_Temp",
+        "T01",
+        "T02",
+        "T1",
+        "T2",
+        "R01",
+        "R02",
+        "R03",
+        "R08",
+        "R09",
+        "R10",
+        "R11"
+      ],
+      "userId": "ACCOUNT_1",
+      "appId": "14"
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json;charset=UTF-8",
+    "bodyProjection": {
+      "error_code": "0",
+      "isReusltSuc": true,
+      "objectResult": [
+        {
+          "code": "Power",
+          "value": "0",
+          "dataType": "ENUM",
+          "rangeStart": "0",
+          "rangeEnd": "1",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "Mode",
+          "value": "1",
+          "dataType": "ENUM",
+          "rangeStart": "0",
+          "rangeEnd": "2",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "Set_Temp",
+          "value": "32.0",
+          "dataType": "TEMP",
+          "rangeStart": "0",
+          "rangeEnd": "99",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "T01",
+          "value": "28.0",
+          "dataType": "TEMP",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "T02",
+          "value": "20.5",
+          "dataType": "TEMP",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "T1",
+          "value": "",
+          "dataType": "",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": "",
+          "dataTypeAi": null
+        },
+        {
+          "code": "T2",
+          "value": "",
+          "dataType": "",
+          "rangeStart": "",
+          "rangeEnd": "",
+          "tmJson": "",
+          "dataTypeAi": null
+        },
+        {
+          "code": "R01",
+          "value": "0.0",
+          "dataType": "TEMP",
+          "rangeStart": "8.00",
+          "rangeEnd": "35.00",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "R02",
+          "value": "32.0",
+          "dataType": "TEMP",
+          "rangeStart": "15.00",
+          "rangeEnd": "40.00",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "R03",
+          "value": "30.0",
+          "dataType": "TEMP",
+          "rangeStart": "8.00",
+          "rangeEnd": "40.00",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "R08",
+          "value": "8.0",
+          "dataType": "TEMP",
+          "rangeStart": "-9",
+          "rangeEnd": "35.00",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "R09",
+          "value": "35.0",
+          "dataType": "TEMP",
+          "rangeStart": "8.00",
+          "rangeEnd": "80",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "R10",
+          "value": "15.0",
+          "dataType": "TEMP",
+          "rangeStart": "-30",
+          "rangeEnd": "40.00",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        },
+        {
+          "code": "R11",
+          "value": "40.0",
+          "dataType": "TEMP",
+          "rangeStart": "15.00",
+          "rangeEnd": "90",
+          "tmJson": null,
+          "dataTypeAi": "num"
+        }
+      ]
+    }
+  }
+}

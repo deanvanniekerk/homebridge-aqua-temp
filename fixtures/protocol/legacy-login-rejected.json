@@ -1,0 +1,37 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T11:17:43.129819+00:00",
+  "provenance": {
+    "source": "https://cloud.linked-go.com/cloudservice/api/app/user/login.json",
+    "method": "One owner-authorized login attempt using locally supplied credentials; TLS validation enabled and redirects disabled",
+    "scope": "Rejected login on the candidate legacy API; no session or device access established",
+    "redaction": "Request credentials omitted entirely; response projected onto the four listed envelope fields",
+    "limitations": "Does not establish whether the supplied credentials are invalid or the API family is unsuitable for this account"
+  },
+  "request": {
+    "method": "POST",
+    "origin": "https://cloud.linked-go.com",
+    "path": "/cloudservice/api/app/user/login.json",
+    "contentType": "application/json; charset=utf-8",
+    "bodyFields": [
+      "user_name",
+      "password",
+      "type"
+    ],
+    "nonSecretBodyValues": {
+      "type": "2"
+    },
+    "credentialValues": "omitted"
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json;charset=UTF-8",
+    "bodyProjection": {
+      "error_code": "-1",
+      "error_msg": "Error username or password",
+      "error_msg_code": "",
+      "is_reuslt_suc": false
+    }
+  }
+}
