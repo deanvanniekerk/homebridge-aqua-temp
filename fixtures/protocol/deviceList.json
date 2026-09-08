@@ -1,0 +1,52 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T11:30:33.217688+00:00",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/device/deviceList",
+    "method": "Owner-authorized HTTPS POST; certificate validation enabled; redirects disabled; 20-second timeout; 1 MB response limit",
+    "scope": "Read-only discovery of the supplied account and its one visible heater",
+    "redaction": "Allowlist projection; identity aliases replaced consistently; product ID replaced to avoid implying an approved profile key; house, serial, radio identifiers and nicknames omitted",
+    "limitations": "One visible device; ownership/shared role unknown; null pagination metadata does not establish absence of pagination"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/crmservice/api/app/device/deviceList",
+    "headers": {
+      "x-token": "REDACTED_TOKEN"
+    },
+    "body": {
+      "userId": "ACCOUNT_1",
+      "appId": "14"
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json;charset=UTF-8",
+    "bodyProjection": {
+      "error_code": "0",
+      "isReusltSuc": true,
+      "totalSize": null,
+      "totalPage": null,
+      "nextPage": null,
+      "objectResult": [
+        {
+          "model": "PASRW040-P-BP4II-C",
+          "custModel": "BOOSTi-INV-HP-40",
+          "wifiSoftwareVer": "V1.2",
+          "deviceStatus": "OFFLINE",
+          "device_status": "OFFLINE",
+          "isFault": false,
+          "is_fault": false,
+          "isExpire": false,
+          "deviceId": "DEVICE_ID_1",
+          "device_id": "DEVICE_ID_1",
+          "deviceCode": "DEVICE_CODE_1",
+          "device_code": "DEVICE_CODE_1",
+          "productId": "PRODUCT_ID_1",
+          "product_id": "PRODUCT_ID_1"
+        }
+      ]
+    }
+  }
+}

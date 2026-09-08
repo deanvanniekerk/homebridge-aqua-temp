@@ -1,0 +1,225 @@
+import { isRecord } from './cloud-error.js';
+
+export type DeviceProfile = 'boost-i-hp40' | 'unknown';
+export interface Device {
+  readonly id: string;
+  readonly profile: DeviceProfile;
+  readonly sources: readonly ('owned' | 'shared')[];
+}
+
+export type DeviceCommand =
+  | { readonly kind: 'target-temperature'; readonly celsius: number }
+  | { readonly kind: 'target-state'; readonly state: 'off' | 'heat' };
+
+export type UnavailableReason =
+  'missing' | 'invalid' | 'conflict' | 'offline' | 'unsupported' | 'unverified';
+export type Reading<T> =
+  | { readonly available: true; readonly value: T }
+  | { readonly available: false; readonly reason: UnavailableReason };
+export interface DeviceReadings {
+  readonly observedAtMs: number;
+  readonly measuredAtMs: null;
+  readonly connectivity: 'online' | 'offline';
+  readonly waterCelsius: Reading<number>;
+  readonly outletCelsius: Reading<number>;
+  readonly ambientCelsius: Reading<number>;
+  readonly reportedTargetCelsius: Reading<number>;
+  readonly power: Reading<'on' | 'off'>;
+  readonly mode: Reading<'heat'>;
+  readonly fault: Reading<boolean>;
+  readonly activity: Reading<'heating' | 'idle' | 'defrost' | 'flow-fault'>;
+  readonly control: Reading<{
+    minimumCelsius: number;
+    maximumCelsius: number;
+    stepCelsius: number;
+  }>;
+}
+
+export const telemetrySelectors = Object.freeze(['Power', 'Mode', 'R02', 'T02', 'T03', 'T05']);
+const available = <T>(value: T): Reading<T> => Object.freeze({ available: true, value });
+const unavailable = (reason: UnavailableReason): Reading<never> =>
+  Object.freeze({ available: false, reason });
+
+export class DeviceError extends Error {
+  constructor(readonly category: 'invalid-response' | 'unsupported' | 'unverified') {
+    super(
+      {
+        'invalid-response': 'Device data does not match the supported protocol.',
+        unsupported: 'This device does not have a supported profile for the requested operation.',
+        unverified: 'The device contract for this operation has not been verified.',
+      }[category],
+    );
+    this.name = 'DeviceError';
+  }
+}
+
+function identifier(value: unknown): value is string {
+  return (
+    typeof value === 'string' && value.length > 0 && value.length <= 256 && value.trim() === value
+  );
+}
+
+/** Account-scoped deviceId/shareId and names are deliberately excluded from identity. */
+export function discoverDevices(
+  owned: unknown,
+  shared: unknown,
+): { devices: Device[]; rejectedRecords: number } {
+  if (!Array.isArray(owned) || !Array.isArray(shared) || owned.length + shared.length > 10_000) {
+    throw new DeviceError('invalid-response');
+  }
+  const devices = new Map<string, Device>();
+  let rejectedRecords = 0;
+  const lists: [unknown[], 'owned' | 'shared'][] = [
+    [owned, 'owned'],
+    [shared, 'shared'],
+  ];
+  for (const [list, source] of lists) {
+    for (const value of list) {
+      if (!isRecord(value)) {
+        rejectedRecords += 1;
+        continue;
+      }
+      const id: unknown = value.deviceCode ?? value.device_code;
+      if (
+        !identifier(id) ||
+        ('deviceCode' in value && 'device_code' in value && value.deviceCode !== value.device_code)
+      ) {
+        rejectedRecords += 1;
+        continue;
+      }
+      const profile =
+        value.model === 'PASRW040-P-BP4II-C' && value.custModel === 'BOOSTi-INV-HP-40'
+          ? 'boost-i-hp40'
+          : 'unknown';
+      const previous = devices.get(id);
+      devices.set(
+        id,
+        Object.freeze({
+          id,
+          profile: previous && previous.profile !== profile ? 'unknown' : profile,
+          sources: Object.freeze([...new Set([...(previous?.sources ?? []), source])]),
+        }),
+      );
+    }
+  }
+  return { devices: [...devices.values()], rejectedRecords };
+}
+
+function decimal(value: unknown): number | undefined {
+  if (typeof value !== 'string' || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value)) return undefined;
+  const result = Number(value);
+  return Number.isFinite(result) ? result : undefined;
+}
+
+function parameters(input: unknown): Map<string, unknown> {
+  if (!Array.isArray(input) || input.length > 1024) throw new DeviceError('invalid-response');
+  const result = new Map<string, unknown>();
+  for (const value of input) {
+    if (!isRecord(value) || !identifier(value.code)) throw new DeviceError('invalid-response');
+    // Duplicate selectors cannot establish which value is current, even if equal.
+    result.set(value.code, result.has(value.code) ? null : value);
+  }
+  return result;
+}
+
+function temperature(values: Map<string, unknown>, code: string): Reading<number> {
+  if (!values.has(code)) return unavailable('missing');
+  const field = values.get(code);
+  if (!isRecord(field) || field.dataType !== 'TEMP') return unavailable('invalid');
+  const value = decimal(field.value);
+  if (value === undefined || value < -273.15) return unavailable('invalid');
+  const lower = decimal(field.rangeStart);
+  const upper = decimal(field.rangeEnd);
+  if (
+    (field.rangeStart !== undefined && field.rangeStart !== '') ||
+    (field.rangeEnd !== undefined && field.rangeEnd !== '')
+  ) {
+    if (
+      lower === undefined ||
+      upper === undefined ||
+      lower > upper ||
+      value < lower ||
+      value > upper
+    )
+      return unavailable('invalid');
+  }
+  return available(value);
+}
+
+function enumeration(values: Map<string, unknown>, code: string): Reading<string> {
+  if (!values.has(code)) return unavailable('missing');
+  const field = values.get(code);
+  if (!isRecord(field) || field.dataType !== 'ENUM' || !identifier(field.value))
+    return unavailable('invalid');
+  return available(field.value);
+}
+
+/** Local acquisition time is explicit; no measurement timestamp was established by discovery. */
+export function normalizeReadings(
+  device: Device,
+  status: unknown,
+  input: unknown,
+  observedAtMs: number,
+): DeviceReadings {
+  if (
+    !Number.isFinite(observedAtMs) ||
+    observedAtMs < 0 ||
+    !isRecord(status) ||
+    (status.status !== 'ONLINE' && status.status !== 'OFFLINE')
+  )
+    throw new DeviceError('invalid-response');
+  const connectivity = status.status === 'ONLINE' ? 'online' : 'offline';
+  const blocked = unavailable(connectivity === 'offline' ? 'offline' : 'unsupported');
+  const empty: DeviceReadings = {
+    observedAtMs,
+    measuredAtMs: null,
+    connectivity,
+    waterCelsius: blocked,
+    outletCelsius: blocked,
+    ambientCelsius: blocked,
+    reportedTargetCelsius: blocked,
+    power: blocked,
+    mode: blocked,
+    fault: blocked,
+    activity: blocked,
+    control: unavailable(device.profile === 'unknown' ? 'unsupported' : 'unverified'),
+  };
+  if (connectivity === 'offline' || device.profile === 'unknown') return Object.freeze(empty);
+  const values = parameters(input);
+  const rawPower = enumeration(values, 'Power');
+  const power: Reading<'on' | 'off'> = !rawPower.available
+    ? rawPower
+    : rawPower.value === '0'
+      ? available('off')
+      : rawPower.value === '1'
+        ? available('on')
+        : unavailable('unsupported');
+  const rawMode = enumeration(values, 'Mode');
+  const mode: Reading<'heat'> = !rawMode.available
+    ? rawMode
+    : rawMode.value === '1'
+      ? available('heat')
+      : unavailable('unsupported');
+  // Owner app changes track R02 in Heat mode while Set_Temp can retain an old target.
+  const reportedTargetCelsius = mode.available
+    ? temperature(values, 'R02')
+    : unavailable('unsupported');
+  const rawFault: unknown = status.isFault ?? status.is_fault;
+  const fault =
+    typeof rawFault !== 'boolean'
+      ? unavailable('missing')
+      : 'isFault' in status && 'is_fault' in status && status.isFault !== status.is_fault
+        ? unavailable('conflict')
+        : available(rawFault);
+  return Object.freeze({
+    ...empty,
+    waterCelsius: temperature(values, 'T02'),
+    outletCelsius: temperature(values, 'T03'),
+    ambientCelsius: temperature(values, 'T05'),
+    reportedTargetCelsius,
+    power,
+    mode,
+    fault,
+    activity: unavailable('unverified'),
+  });
+}

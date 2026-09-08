@@ -36,6 +36,7 @@ test('distribution contains only reviewed runtime files and refuses publication'
     'dist/cloud-http.js',
     'dist/cloud-protocol.js',
     'dist/cloud-time.js',
+    'dist/device-model.js',
     'dist/index.js',
     'dist/platform.js',
     'dist/settings.js',

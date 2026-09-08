@@ -1,0 +1,52 @@
+{
+  "fixtureFormat": 1,
+  "kind": "sanitized-observation",
+  "observedAt": "2026-09-08T11:54:00.871517+00:00",
+  "provenance": {
+    "source": "https://cloud.linked-go.com:449/crmservice/api/app/device/getMyAppectDeviceShareDataList",
+    "method": "Owner-authorized read-only HTTPS POST; TLS verified; no redirects; 20-second timeout; 1 MB response limit",
+    "scope": "Dedicated shared account confirmed by owner; this heater only",
+    "redaction": "Strict allowlist; device/account/share/product identifiers replaced; deviceSecret, account and owner names/emails, serial/radio/location/house/organization fields and timestamps omitted",
+    "limitations": "One accepted share; pagination beyond page 1 and permission/lock enum meanings unverified. Matching deviceCode established across observations, deviceId cross-account stability not established."
+  },
+  "request": {
+    "method": "POST",
+    "path": "/crmservice/api/app/device/getMyAppectDeviceShareDataList",
+    "headers": {
+      "x-token": "REDACTED_SHARED_TOKEN"
+    },
+    "body": {
+      "toUser": "SHARED_ACCOUNT_1",
+      "appId": "14",
+      "pageIndex": 1,
+      "pageSize": 100
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json;charset=UTF-8",
+    "bodyProjection": {
+      "error_code": "0",
+      "isReusltSuc": true,
+      "objectResult": [
+        {
+          "model": "PASRW040-P-BP4II-C",
+          "custModel": "BOOSTi-INV-HP-40",
+          "deviceStatus": "ONLINE",
+          "isFault": false,
+          "reviewStatus": "0",
+          "authStatus": null,
+          "isLock": "0",
+          "lockState": "1",
+          "wifiSoftwareVer": "V1.2",
+          "protocalId": null,
+          "mainBoardVersion": null,
+          "deviceCode": "DEVICE_CODE_1",
+          "deviceId": "SHARED_DEVICE_ID_1",
+          "productId": "PRODUCT_ID_1",
+          "shareId": "SHARE_1"
+        }
+      ]
+    }
+  }
+}
