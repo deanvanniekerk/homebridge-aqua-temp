@@ -7,6 +7,7 @@ An independent Homebridge plugin project for Aqua Temp connected heat pumps, sta
 The first release will bring water temperature, target temperature, on/off control, and verified operating status into Apple Home. The primary deployment is Homebridge running in Docker on SONOFF iHost.
 
 - [Product and engineering specification](docs/SPEC.md)
+- [Observed deployment and runtime compatibility](docs/COMPATIBILITY.md)
 - [Implementation roadmap](docs/ROADMAP.md)
 - [MIT license](LICENSE)
 

@@ -10,7 +10,7 @@ Replace an unreliable existing integration with an independently written plugin 
 | --- | --- |
 | Initial equipment | AstralPool / Fluidra Waterlinx BOOST-i-INV-HP-40. The supplied nameplate identifies an inverter swimming pool heat pump. |
 | Use | At home; scoped as residential pool heating from the nameplate and interview. No domestic hot-water-specific functions. |
-| Host | Homebridge in Docker on SONOFF iHost; screenshot identifies the `homebridge/homebridge` image. Installed tag, architecture and runtime versions remain unverified. |
+| Host | Homebridge in Docker on SONOFF iHost. [Compatibility discovery](COMPATIBILITY.md) records observed ARMv7/runtime/storage details and the selected baseline; the installed image tag/digest remain unavailable. |
 | First-release features | Water temperature, target temperature, on/off, and truthful operating status. |
 | Connectivity | Aqua Temp cloud is acceptable. A dedicated account with a shared heater is recommended if current session behavior requires it. |
 | Quality | Extensive automated local tests, including failure/recovery scenarios; optional real-account checks and documented real-host validation. |
@@ -33,7 +33,7 @@ Cooling/auto selection, silent mode, energy/history graphs, Eve extensions, sche
 
 Record the installed container tag/digest, CPU architecture, Node, Homebridge and Homebridge UI versions, network mode, and persistent storage configuration. Use targeted version output, not a full configuration/environment dump. Verify a compatible ARMv7 container build and plugin dependency installation before claiming iHost support.
 
-As checked on 2026-09-08, Homebridge 2.4.0 is the current stable release. The official template uses TypeScript/ESM and declares Node 22/24 support. These are starting candidates, not proof that the owner's installed container can run them. Prefer current stable Homebridge and a supported LTS runtime, pin the tested matrix, and record any host upgrade prerequisite. Do not silently upgrade the user's running container. Do not promise Homebridge 1.x support without a tested requirement and matrix.
+The [2026-09-08 compatibility investigation](COMPATIBILITY.md) selects Homebridge 2.4.0 and Node 22.23.2, with strict TypeScript/ESM, as the implementation baseline. Node 22 retains upstream ARMv7 support; Node 24 classifies it as Experimental. The pinned ARMv7 image and dependency candidate passed local emulated installation, typechecking and empty Homebridge startup. The actual iHost still runs Homebridge 1.11.1, Node 22.13.1 and UI 5.11.0, so a coordinated upgrade is required before matching the baseline. Do not silently upgrade the running container or claim that emulation proves physical-host compatibility. Homebridge 1.x support is outside the selected matrix.
 
 ### D2: Vendor contract
 
