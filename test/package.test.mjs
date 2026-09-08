@@ -7,6 +7,9 @@ import { after, before, test } from 'node:test';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
+import { setTimeout as delay } from 'node:timers/promises';
+import { credentials, login, reply, serverFor, success } from './fake-cloud.mjs';
+
 import { runHomebridge } from './homebridge-process.mjs';
 
 const run = promisify(execFile);
@@ -37,13 +40,16 @@ test('distribution contains only reviewed runtime files and refuses publication'
     'dist/cloud-protocol.js',
     'dist/cloud-time.js',
     'dist/command-queue.js',
+    'dist/configuration.js',
     'dist/coordinator.js',
     'dist/device-model.js',
+    'dist/diagnostics.js',
     'dist/gateway.js',
     'dist/index.js',
     'dist/platform.js',
     'dist/scheduler.js',
     'dist/settings.js',
+    'dist/thermostat.js',
     'package.json',
   ]);
   await run('tar', ['-xzf', archive, '-C', workspace]);
@@ -71,7 +77,26 @@ test('distribution contains only reviewed runtime files and refuses publication'
 test(
   'packed plugin loads in a clean production Homebridge host and survives restart',
   { timeout: 180_000 },
-  async () => {
+  async (t) => {
+    const server = await serverFor(t, (call, response) => {
+      const path = call.path.split('/').at(-1);
+      const device = {
+        deviceCode: 'synthetic-device',
+        model: 'PASRW040-P-BP4II-C',
+        custModel: 'BOOSTi-INV-HP-40',
+      };
+      const result = {
+        deviceList: [device],
+        getMyAppectDeviceShareDataList: [device],
+        getDeviceStatus: { status: 'ONLINE' },
+        getDataByCode: [{ code: 'T02', dataType: 'TEMP', value: '20.5' }],
+      }[path];
+      reply(response, path === 'login' ? login : success(result));
+    });
+    const processOptions = {
+      preload: fileURLToPath(new URL('./redirect-cloud.mjs', import.meta.url)),
+      env: { AQUA_TEST_ORIGIN: server.origin },
+    };
     const consumer = join(workspace, 'consumer');
     await mkdir(join(consumer, 'storage'), { recursive: true });
     await writeFile(join(consumer, 'package.json'), JSON.stringify({ private: true }));
@@ -92,22 +117,103 @@ test(
     );
     await assert.rejects(access(join(consumer, 'node_modules/typescript')));
     await assert.rejects(access(join(consumer, 'node_modules/eslint')));
-    await writeFile(
-      join(consumer, 'storage/config.json'),
-      JSON.stringify({
-        bridge: {
-          name: 'Aqua foundation smoke',
-          username: '0E:11:22:33:44:66',
-          pin: '031-45-154',
-          port: 0,
-          bind: ['127.0.0.1'],
-          advertiser: 'ciao',
+    const config = {
+      bridge: {
+        name: 'Aqua foundation smoke',
+        username: '0E:11:22:33:44:66',
+        pin: '031-45-154',
+        port: 0,
+        bind: ['127.0.0.1'],
+        advertiser: 'ciao',
+      },
+      accessories: [],
+      platforms: [
+        {
+          platform: 'AquaTemp',
+          name: 'Aqua Temp',
+          ...credentials,
         },
-        accessories: [],
-        platforms: [{ platform: 'AquaTemp', name: 'Aqua Temp' }],
-      }),
+      ],
+    };
+    const configPath = join(consumer, 'storage/config.json');
+    await writeFile(configPath, JSON.stringify(config));
+    let identity;
+    const exercise = async (output) => {
+      const match = [...output().matchAll(/Homebridge v2\.4\.0.*is running on port (\d+)/g)].at(-1);
+      assert.ok(match, output());
+      const origin = `http://127.0.0.1:${match[1]}`;
+      let water;
+      const deadline = Date.now() + 5_000;
+      while (!water) {
+        const response = await fetch(`${origin}/accessories`);
+        assert.equal(response.status, 200);
+        const body = await response.json();
+        for (const accessory of body.accessories) {
+          const service = accessory.services.find((item) => item.type === '4A');
+          const current = service?.characteristics.find((item) => item.type === '11');
+          if (current?.value === 20.5) water = { aid: accessory.aid, iid: current.iid, service };
+        }
+        if (Date.now() >= deadline)
+          throw new Error(`No fresh thermostat in Homebridge: ${JSON.stringify(body)}`);
+        if (!water) await delay(20);
+      }
+      const nextIdentity = { aid: water.aid, iid: water.iid };
+      if (identity) assert.deepEqual(nextIdentity, identity);
+      identity = nextIdentity;
+      const target = water.service.characteristics.find((item) => item.type === '35');
+      const read = await fetch(
+        `${origin}/characteristics?id=${water.aid}.${water.iid},${water.aid}.${target.iid}`,
+      );
+      assert.equal(read.status, 207);
+      const values = (await read.json()).characteristics;
+      assert.equal(values.find((item) => item.iid === water.iid).value, 20.5);
+      assert.equal(values.find((item) => item.iid === target.iid).status, -70402);
+      const write = await fetch(`${origin}/characteristics`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/hap+json', authorization: config.bridge.pin },
+        body: JSON.stringify({ characteristics: [{ aid: water.aid, iid: target.iid, value: 31 }] }),
+      });
+      assert.equal(write.status, 207);
+      assert.equal(
+        (await write.json()).characteristics[0].status,
+        -70404,
+        'unverified control is read-only',
+      );
+    };
+    await runHomebridge(consumer, undefined, { ...processOptions, exercise });
+    await runHomebridge(consumer, undefined, { ...processOptions, exercise });
+    const beforeInvalid = server.calls.length;
+    config.platforms[0].pollInterval = 'synthetic-secret-invalid-interval';
+    await writeFile(configPath, JSON.stringify(config));
+    const rejectedOutput = await runHomebridge(
+      consumer,
+      'Configuration rejected: Poll interval',
+      processOptions,
     );
-    await runHomebridge(consumer);
-    await runHomebridge(consumer);
+    assert.equal(server.calls.length, beforeInvalid);
+    assert.doesNotMatch(rejectedOutput, /synthetic@example|synthetic-password|synthetic-secret/);
+    assert.doesNotMatch(rejectedOutput, /Aqua Temp monitoring started/);
+    delete config.platforms[0].pollInterval;
+    await writeFile(configPath, JSON.stringify(config));
+    await runHomebridge(consumer, undefined, { ...processOptions, exercise });
+    config.platforms[0]._bridge = { username: '0E:11:22:33:44:77', port: 0 };
+    await mkdir(join(consumer, 'child-storage'));
+    await writeFile(join(consumer, 'child-storage/config.json'), JSON.stringify(config));
+    identity = undefined; // Child bridges have a separate HAP identity namespace.
+    const childOptions = { ...processOptions, exercise, bridges: 2, storage: 'child-storage' };
+    await runHomebridge(consumer, undefined, childOptions);
+    await runHomebridge(consumer, undefined, childOptions);
+    assert.equal(server.calls.filter((call) => call.path.endsWith('/login')).length, 5);
+    assert.ok(
+      server.calls.every((call) =>
+        [
+          'login',
+          'deviceList',
+          'getMyAppectDeviceShareDataList',
+          'getDeviceStatus',
+          'getDataByCode',
+        ].includes(call.path.split('/').at(-1)),
+      ),
+    );
   },
 );

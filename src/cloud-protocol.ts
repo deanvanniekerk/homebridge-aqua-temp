@@ -40,7 +40,9 @@ export function originFor(value = vendorOrigin): string {
 }
 
 function text(value: unknown, maximum = 256): value is string {
-  return typeof value === 'string' && value.trim().length > 0 && value.length <= maximum;
+  return (
+    typeof value === 'string' && value.trim().length > 0 && Array.from(value).length <= maximum
+  );
 }
 
 export function credentialsFor(value: Credentials): Credentials {
