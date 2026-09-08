@@ -13,7 +13,7 @@ import { FakeScheduler } from './fake-scheduler.mjs';
 import { credentials, login, reply, success } from './fake-cloud.mjs';
 
 // Seven virtual days at the supported 300-second interval. All identities/values are synthetic.
-// This exercises the implemented read path; it does not establish vendor control semantics.
+// Successful and lost-acknowledgment writes exercise the supported profile; vendor behavior remains separately observed.
 test(
   'seven virtual days recover through actual HTTP, normalization, freshness and HAP without accumulating work',
   { timeout: 180_000 },
@@ -37,6 +37,9 @@ test(
       expiredToken = '',
       maximumSockets = 0,
       maximumTimers = 0;
+    const targets = new Map();
+    let commandOutcome = 'success';
+    let attemptedWrites = 0;
     const sockets = new Set();
     const counts = new Map();
     const baselineTimers = process
@@ -55,7 +58,11 @@ test(
       );
       if (path === 'control') {
         writes += 1;
-        reply(response, success(null));
+        const command = input.param[0];
+        assert.equal(command.protocolCode, 'R02');
+        targets.set(command.deviceCode, command.value);
+        if (commandOutcome === 'lost-ack') response.destroy();
+        else reply(response, success(null));
         return;
       }
       if (path === 'login') {
@@ -98,7 +105,10 @@ test(
         return;
       }
       if (path === 'getDeviceStatus') {
-        reply(response, success({ status: phase === 18 && first ? 'OFFLINE' : 'ONLINE' }));
+        reply(
+          response,
+          success({ status: phase === 18 && first ? 'OFFLINE' : 'ONLINE', isFault: false }),
+        );
         return;
       }
       if (path === 'getDataByCode') {
@@ -107,7 +117,7 @@ test(
           response.end('{');
           return;
         }
-        const target = String(30 + (cycle % 3));
+        const target = targets.get(input.deviceCode) ?? String(30 + (cycle % 3));
         reply(
           response,
           success(
@@ -115,8 +125,9 @@ test(
               ? { unexpected: credentials.password }
               : [
                   { code: 'T02', dataType: 'TEMP', value: String(20 + (cycle % 10) / 10) },
-                  { code: 'Power', value: '1' },
-                  { code: 'Mode', value: '1' },
+                  { code: 'Power', dataType: 'ENUM', value: '1' },
+                  { code: 'Mode', dataType: 'ENUM', value: '1' },
+                  { code: 'O07', dataType: null, value: '0' },
                   { code: 'Set_Temp', dataType: 'TEMP', value: target },
                   { code: 'R02', dataType: 'TEMP', value: target },
                 ],
@@ -199,13 +210,26 @@ test(
       }
       await scheduler.flush();
     }
+    async function advanceWindow(milliseconds) {
+      const end = scheduler.now() + milliseconds;
+      // Let real HTTP settle at each virtual event; jumping across an in-flight
+      // request would spuriously fire its timeout before the OS can deliver data.
+      for (;;) {
+        const next = Math.min(...[...scheduler.tasks.values()].map((task) => task.at));
+        if (next > end) break;
+        await scheduler.advance(next - scheduler.now());
+        await settled();
+      }
+      await scheduler.advance(end - scheduler.now());
+      await settled();
+    }
     const start = scheduler.now();
     coordinator.start();
     await settled();
     for (cycle = 1; cycle <= cycles; cycle += 1) {
+      targets.clear(); // Later app changes must replace previous command results.
       if (cycle % 288 === 0) expiredToken = token;
-      await scheduler.advance(interval);
-      await settled();
+      await advanceWindow(interval);
       const states = coordinator.snapshot().devices;
       assert.equal(states.length, 2);
       assert.ok(scheduler.tasks.size <= 2, `retained scheduler tasks at cycle ${cycle}`);
@@ -222,12 +246,29 @@ test(
         const current = accessories[1]
           .getService(api.hap.Service.Thermostat)
           .getCharacteristic(api.hap.Characteristic.CurrentTemperature);
-        assert.ok(Math.abs((await current.handleGetRequest()) - (20 + (cycle % 10) / 10)) < 1e-8);
-      }
-      if (cycle % 24 === 0)
-        await assert.rejects(
-          coordinator.command(devices[0].deviceCode, { kind: 'target-temperature', celsius: 31 }),
+        assert.ok(
+          Math.abs((await current.handleGetRequest()) - (20 + (cycle % 10) / 10)) < 1e-8,
+          `water at cycle ${cycle}: ${await current.handleGetRequest()}`,
         );
+      }
+      assert.equal(writes, attemptedWrites, 'no command replay during recovery');
+      if (cycle % 24 === 0) {
+        commandOutcome = cycle % 48 === 0 ? 'lost-ack' : 'success';
+        const target = accessories[0]
+          .getService(api.hap.Service.Thermostat)
+          .getCharacteristic(api.hap.Characteristic.TargetTemperature);
+        const result = target.handleSetRequest(31.5);
+        attemptedWrites += 1;
+        if (commandOutcome === 'lost-ack')
+          await assert.rejects(result, (error) => error === -70402);
+        else {
+          await result;
+          assert.equal(await target.handleGetRequest(), 31.5);
+        }
+        await scheduler.advance(0);
+        await settled();
+        assert.equal(writes, attemptedWrites, 'lost acknowledgments are never replayed');
+      }
     }
     assert.equal(scheduler.now() - start, 7 * 24 * 60 * 60 * 1000);
     coordinator.close();
@@ -240,15 +281,15 @@ test(
       process.getActiveResourcesInfo().filter((type) => type === 'Timeout').length,
       baselineTimers,
     );
-    assert.equal(writes, 0);
+    assert.equal(writes, 84);
     assert.equal(sleeps, 0);
     assert.equal(logins, 8, 'one initial login and one renewal per virtual day');
-    assert.ok(requests <= (cycles + 1) * 7);
+    assert.ok(requests <= (cycles + 1) * 8);
     assert.ok(notifications <= (cycles + 1) * 5);
     assert.ok(logLines <= (cycles + 1) * 5);
     assert.ok(maximumSockets <= 8);
     assert.ok(maximumTimers <= baselineTimers + 10);
-    assert.equal(counts.size, 5);
+    assert.equal(counts.size, 6);
     t.diagnostic(
       JSON.stringify({
         virtualDays: 7,
