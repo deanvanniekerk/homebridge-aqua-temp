@@ -44,15 +44,9 @@ test('the real cloud client discovers shared and owned identities and normalizes
   const sample = await gateway.read(discovery.devices[0], signal);
   assert.deepEqual(sample.waterCelsius, { available: true, value: 20.5 });
   assert.deepEqual(sample.reportedTargetCelsius, { available: true, value: 32 });
-  assert.deepEqual(sample.control, { available: false, reason: 'unverified' });
+  assert.equal(sample.control.available, true);
   assert.equal(sample.observedAtMs, 123_000);
   assert.equal(server.calls.filter((call) => call.path.endsWith('/login')).length, 1);
-  const before = server.calls.length;
-  await assert.rejects(
-    gateway.write(discovery.devices[0], { kind: 'target-temperature', celsius: 31 }, signal),
-    { category: 'unverified' },
-  );
-  assert.equal(server.calls.length, before);
 });
 
 test('a malformed discovery source preserves the other source and reports partial discovery', async (t) => {
@@ -190,5 +184,85 @@ test('wall-clock corrections do not corrupt acquisition freshness or diagnostic 
   });
   assert.ok(
     report.devices[0].lastSuccessAgeMs >= 60_000 && report.devices[0].lastSuccessAgeMs < 61_000,
+  );
+});
+
+test('supported controls use absolute R02/Power writes and require fresh Heat-mode preflight', async (t) => {
+  const telemetry = await observed('telemetry-core');
+  let power = '0',
+    mode = '1',
+    target = '32.0',
+    fault = false;
+  const writes = [];
+  const server = await serverFor(t, (call, response) => {
+    if (call.path.endsWith('/login')) return reply(response, login);
+    if (call.path.endsWith('/getDeviceStatus'))
+      return reply(response, success({ status: 'ONLINE', isFault: fault }));
+    if (call.path.endsWith('/getDataByCode'))
+      return reply(
+        response,
+        success(
+          telemetry.map((field) => ({
+            ...field,
+            value: { Power: power, Mode: mode, R02: target }[field.code] ?? field.value,
+          })),
+        ),
+      );
+    if (call.path.endsWith('/control')) {
+      writes.push(call.body.param);
+      const command = call.body.param[0];
+      if (command.protocolCode === 'Power') power = command.value;
+      if (command.protocolCode === 'R02') target = command.value;
+      return reply(response, success(null));
+    }
+    throw new Error('Unexpected control-test request');
+  });
+  const gateway = new AquaTempGateway(new AquaTempClient(credentials, { origin: server.origin }));
+  t.after(() => gateway.close());
+  const device = { id: 'DEVICE_CODE_1', profile: 'boost-i-hp40', sources: ['shared'] };
+  const signal = new AbortController().signal;
+  for (const value of [15, 32.5, 40, 32]) {
+    await gateway.write(device, { kind: 'target-temperature', celsius: value }, signal);
+    assert.equal((await gateway.read(device, signal)).reportedTargetCelsius.value, value);
+  }
+  await gateway.write(device, { kind: 'target-state', state: 'heat' }, signal);
+  assert.equal((await gateway.read(device, signal)).power.value, 'on');
+  fault = true;
+  await gateway.write(device, { kind: 'target-state', state: 'off' }, signal);
+  assert.equal((await gateway.read(device, signal)).power.value, 'off');
+  assert.deepEqual(
+    writes.map((batch) => [batch[0].protocolCode, batch[0].value]),
+    [
+      ['R02', '15'],
+      ['R02', '32.5'],
+      ['R02', '40'],
+      ['R02', '32'],
+      ['Power', '1'],
+      ['Power', '0'],
+    ],
+  );
+  assert.ok(writes.every((batch) => batch.length === 1 && batch[0].deviceCode === device.id));
+  const before = server.calls.length;
+  for (const value of [14.5, 40.5, 32.25, NaN, Infinity, '32'])
+    await assert.rejects(
+      gateway.write(device, { kind: 'target-temperature', celsius: value }, signal),
+    );
+  await assert.rejects(
+    gateway.write(
+      { ...device, profile: 'unknown' },
+      { kind: 'target-state', state: 'heat' },
+      signal,
+    ),
+  );
+  assert.equal(server.calls.length, before, 'invalid commands fail before any network work');
+  await assert.rejects(gateway.write(device, { kind: 'target-state', state: 'heat' }, signal));
+  fault = false;
+  mode = '2';
+  await assert.rejects(gateway.write(device, { kind: 'target-state', state: 'heat' }, signal));
+  await assert.rejects(gateway.write(device, { kind: 'target-temperature', celsius: 31 }, signal));
+  assert.equal(
+    writes.length,
+    6,
+    'preflight blocks faults and externally changed modes without sending a mode command',
   );
 });

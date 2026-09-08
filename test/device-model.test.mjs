@@ -23,7 +23,7 @@ test('owned and shared observations deduplicate by device code despite different
   assert.equal(JSON.stringify(result).includes('SHARED_DEVICE_ID_1'), false);
 });
 
-test('observed temperatures and requested state remain separate from unverified activity and writes', () => {
+test('observed Heat readings enable bounded controls without guessing compressor activity', () => {
   const [device] = discoverDevices(owned, []).devices;
   const state = normalizeReadings(device, { status: 'ONLINE', isFault: false }, telemetry, 1000);
   assert.deepEqual(state.waterCelsius, { available: true, value: 20.5 });
@@ -31,7 +31,10 @@ test('observed temperatures and requested state remain separate from unverified 
   assert.deepEqual(state.mode, { available: true, value: 'heat' });
   assert.deepEqual(state.reportedTargetCelsius, { available: true, value: 32 });
   assert.deepEqual(state.activity, { available: false, reason: 'unverified' });
-  assert.deepEqual(state.control, { available: false, reason: 'unverified' });
+  assert.deepEqual(state.control, {
+    available: true,
+    value: { minimumCelsius: 15, maximumCelsius: 40, stepCelsius: 0.5 },
+  });
   assert.equal(state.observedAtMs, 1000);
   assert.equal(state.measuredAtMs, null);
 });
@@ -181,4 +184,34 @@ test('offline or unsupported devices do not expose fresh-looking readings or cap
   assert.throws(() => normalizeReadings(device, { status: 'unexpected' }, telemetry, 1000), {
     category: 'invalid-response',
   });
+});
+
+test('only a clear fault status and zero compressor frequency establish inactive operation', () => {
+  const [device] = discoverDevices(owned, []).devices;
+  const stopped = { code: 'O07', dataType: null, value: '0', rangeStart: '0', rangeEnd: '120' };
+  const normalize = (frequency, fault = false) =>
+    normalizeReadings(
+      device,
+      { status: 'ONLINE', isFault: fault },
+      [...telemetry, frequency],
+      1000,
+    );
+  assert.deepEqual(normalize(stopped).activity, { available: true, value: 'idle' });
+  for (const value of ['52', '', '-1', 'NaN'])
+    assert.equal(normalize({ ...stopped, value }).activity.available, false);
+  assert.equal(normalize(stopped, true).activity.available, false);
+  const unknownFault = normalizeReadings(
+    device,
+    { status: 'ONLINE' },
+    [...telemetry, stopped],
+    1000,
+  );
+  assert.equal(unknownFault.activity.available, false);
+  const duplicate = normalizeReadings(
+    device,
+    { status: 'ONLINE', isFault: false },
+    [...telemetry, stopped, stopped],
+    1000,
+  );
+  assert.equal(duplicate.activity.available, false);
 });

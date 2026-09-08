@@ -5,6 +5,7 @@ import { CloudError } from './cloud-error.js';
 import {
   DeviceError,
   discoverDevices,
+  encodeCommand,
   normalizeReadings,
   telemetrySelectors,
   type Device,
@@ -104,12 +105,33 @@ export class AquaTempGateway implements DeviceGateway {
     return normalizeReadings(device, status, telemetry, this.#now());
   }
 
-  validateCommand(device: Device, _command: DeviceCommand, _readings: DeviceReadings): void {
-    throw unverifiedControl(device);
+  validateCommand(device: Device, command: DeviceCommand, readings: DeviceReadings): void {
+    encodeCommand(device, command);
+    if (
+      readings.connectivity !== 'online' ||
+      !readings.control.available ||
+      !readings.mode.available ||
+      !readings.power.available
+    )
+      throw new DeviceError('unsupported');
+    // A known fault must not prevent a supported Off request, but On/target changes require
+    // an explicitly clear fault status. No command changes the vendor operating mode.
+    if (
+      !(command.kind === 'target-state' && command.state === 'off') &&
+      (!readings.fault.available || readings.fault.value)
+    )
+      throw new DeviceError('unverified');
   }
 
-  write(device: Device, _command: DeviceCommand, _signal: AbortSignal): Promise<void> {
-    return Promise.reject(unverifiedControl(device));
+  async write(device: Device, command: DeviceCommand, signal: AbortSignal): Promise<void> {
+    const target = { ...device };
+    const intent = { ...command };
+    const encoded = encodeCommand(target, intent);
+    // Recheck external app changes within the caller's original eight-second budget.
+    const readings = await this.read(target, signal);
+    this.validateCommand(target, intent, readings);
+    signal.throwIfAborted();
+    await this.#client.write([{ deviceCode: target.id, ...encoded }], { signal });
   }
 }
 
@@ -120,8 +142,4 @@ function deviceList(value: unknown): unknown[] {
 
 function safeFailure(error: unknown): CloudError {
   return error instanceof CloudError ? error : new CloudError('invalid-response');
-}
-
-function unverifiedControl(device: Device): DeviceError {
-  return new DeviceError(device.profile === 'unknown' ? 'unsupported' : 'unverified');
 }

@@ -35,10 +35,44 @@ export interface DeviceReadings {
   }>;
 }
 
-export const telemetrySelectors = Object.freeze(['Power', 'Mode', 'R02', 'T02', 'T03', 'T05']);
+export const telemetrySelectors = Object.freeze([
+  'Power',
+  'Mode',
+  'R02',
+  'T02',
+  'T03',
+  'T05',
+  'O07',
+]);
 const available = <T>(value: T): Reading<T> => Object.freeze({ available: true, value });
 const unavailable = (reason: UnavailableReason): Reading<never> =>
   Object.freeze({ available: false, reason });
+const heatControl = Object.freeze({ minimumCelsius: 15, maximumCelsius: 40, stepCelsius: 0.5 });
+
+/** Absolute wire values for the deliberately limited, owner-observed Heat profile. */
+export function encodeCommand(
+  device: Device,
+  command: DeviceCommand,
+): { protocolCode: string; value: string } {
+  if (device.profile !== 'boost-i-hp40') throw new DeviceError('unsupported');
+  if (command.kind === 'target-state') {
+    const state: unknown = command.state;
+    if (state === 'off' || state === 'heat')
+      return { protocolCode: 'Power', value: state === 'off' ? '0' : '1' };
+  }
+  if (command.kind === 'target-temperature') {
+    const value = command.celsius;
+    if (
+      typeof value === 'number' &&
+      Number.isFinite(value) &&
+      value >= heatControl.minimumCelsius &&
+      value <= heatControl.maximumCelsius &&
+      Number.isInteger(value / heatControl.stepCelsius)
+    )
+      return { protocolCode: 'R02', value: String(value) };
+  }
+  throw new DeviceError('unsupported');
+}
 
 export class DeviceError extends Error {
   constructor(readonly category: 'invalid-response' | 'unsupported' | 'unverified') {
@@ -211,6 +245,11 @@ export function normalizeReadings(
       : 'isFault' in status && 'is_fault' in status && status.isFault !== status.is_fault
         ? unavailable('conflict')
         : available(rawFault);
+  const frequency = values.get('O07');
+  // Zero corroborates the observed inactive baseline. Positive frequency cannot
+  // distinguish useful heating from defrost/protection, so remains unavailable.
+  const stopped =
+    isRecord(frequency) && frequency.dataType == null && decimal(frequency.value) === 0;
   return Object.freeze({
     ...empty,
     waterCelsius: temperature(values, 'T02'),
@@ -220,6 +259,13 @@ export function normalizeReadings(
     power,
     mode,
     fault,
-    activity: unavailable('unverified'),
+    activity:
+      mode.available && power.available && fault.available && !fault.value && stopped
+        ? available('idle' as const)
+        : unavailable('unverified'),
+    control:
+      mode.available && power.available && reportedTargetCelsius.available
+        ? available(heatControl)
+        : unavailable('unsupported'),
   });
 }
