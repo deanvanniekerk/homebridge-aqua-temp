@@ -2,7 +2,7 @@
 
 An independent Homebridge plugin project for Aqua Temp connected heat pumps, starting with an AstralPool BOOST-i-INV-HP-40 used at home.
 
-**Status: development package foundation. It loads in Homebridge, but heat pump discovery and controls are not implemented. No npm release is available.**
+**Status: unfinished development integration. Cloud discovery and verified water readings are connected to Homebridge. Physical controls and activity remain gated by unresolved protocol evidence. No npm release is available.**
 
 The first release will bring water temperature, target temperature, on/off control, and verified operating status into Apple Home. The primary deployment is Homebridge running in Docker on SONOFF iHost.
 

@@ -1,0 +1,23 @@
+{
+  "runtime": {
+    "plugin": "0.0.0-development.0",
+    "node": "22.23.2",
+    "homebridge": "2.4.0"
+  },
+  "account": {
+    "discoveryComplete": true,
+    "failure": null
+  },
+  "retryInMs": 30000,
+  "devices": [
+    {
+      "reference": "device-1",
+      "profile": "boost-i-hp40",
+      "status": "stale",
+      "controls": "unverified",
+      "lastSuccessAgeMs": 180000,
+      "failure": "timeout"
+    }
+  ],
+  "omittedDevices": 0
+}

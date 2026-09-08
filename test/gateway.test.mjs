@@ -4,6 +4,8 @@ import { test } from 'node:test';
 import { once } from 'node:events';
 import { AquaTempClient } from '../dist/cloud-client.js';
 import { AquaTempGateway } from '../dist/gateway.js';
+import { Diagnostics } from '../dist/diagnostics.js';
+import { systemScheduler } from '../dist/scheduler.js';
 import { AccountCoordinator } from '../dist/coordinator.js';
 import { deferred } from './fake-scheduler.mjs';
 import { credentials, login, reply, serverFor, success } from './fake-cloud.mjs';
@@ -142,4 +144,51 @@ test('offline, unknown-profile and malformed status responses do not trigger tel
   await assert.rejects(gateway.read(device, signal), { category: 'invalid-response' });
   assert.equal(server.calls.length, 4);
   assert.ok(server.calls.every((call) => !call.path.endsWith('/getDataByCode')));
+});
+
+test('wall-clock corrections do not corrupt acquisition freshness or diagnostic ages', async (t) => {
+  const owned = await observed('deviceList');
+  const telemetry = await observed('telemetry-core');
+  const server = await serverFor(t, (call, response) => {
+    const path = call.path.split('/').at(-1);
+    const result = {
+      deviceList: owned,
+      getMyAppectDeviceShareDataList: [],
+      getDeviceStatus: { status: 'ONLINE' },
+      getDataByCode: telemetry,
+    }[path];
+    reply(response, path === 'login' ? login : success(result));
+  });
+  const original = Date.now;
+  Date.now = () => original() - 86_400_000;
+  t.after(() => {
+    Date.now = original;
+  });
+  const coordinator = new AccountCoordinator(
+    new AquaTempGateway(new AquaTempClient(credentials, { origin: server.origin })),
+  );
+  t.after(() => coordinator.close());
+  const updates = coordinator.updates(AbortSignal.timeout(1000));
+  coordinator.start();
+  let state;
+  for await (const snapshot of updates) {
+    if (snapshot.devices[0]?.readings) {
+      state = snapshot.devices[0];
+      break;
+    }
+  }
+  assert.ok(state, 'received a real HTTP reading');
+  assert.equal(state.status, 'healthy');
+  assert.ok(Math.abs(state.lastSuccessMs - systemScheduler.now()) < 1000);
+  const diagnostics = new Diagnostics(() => {}, {
+    pluginVersion: '0.0.0-development.0',
+    homebridgeVersion: '2.4.0',
+  });
+  const report = diagnostics.report({
+    ...coordinator.snapshot(),
+    devices: [{ ...state, lastSuccessMs: systemScheduler.now() - 60_000 }],
+  });
+  assert.ok(
+    report.devices[0].lastSuccessAgeMs >= 60_000 && report.devices[0].lastSuccessAgeMs < 61_000,
+  );
 });
