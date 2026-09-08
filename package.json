@@ -29,7 +29,7 @@
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node --test --test-concurrency=1 test/*.test.mjs",
+    "test": "npm run build && node --test --test-concurrency=1 test/*.test.mjs",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
     "prepack": "npm run build",
     "prepublishOnly": "node -e \"throw new Error('Publishing is disabled until release preparation (#11).')\""
