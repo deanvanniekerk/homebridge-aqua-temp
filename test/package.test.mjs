@@ -192,7 +192,7 @@ test(
     const report = JSON.parse(reportLines[0].split('Diagnostic report: ')[1]);
     assert.equal(report.runtime.plugin, '0.0.0-development.0');
     assert.equal(report.devices[0].reference, 'device-1');
-    assert.equal(report.devices[0].controls, 'unverified');
+    assert.equal(report.devices[0].controls, 'unsupported');
     assert.doesNotMatch(JSON.stringify(report), /synthetic|@|token|deviceCode|deviceId/);
 
     await runHomebridge(consumer, undefined, { ...processOptions, exercise });
