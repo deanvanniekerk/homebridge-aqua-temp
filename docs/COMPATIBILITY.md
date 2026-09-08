@@ -41,6 +41,8 @@ The installed tag/digest cannot be recovered from the visible Info panel. They r
 | Node typings | `@types/node@22.20.1`, development-only | Match the selected runtime major rather than using declarations for a newer Node major |
 | Runtime dependencies | Homebridge-supplied HAP API; no new plugin dependencies selected here | The plugin foundation and vendor implementation must verify their final dependency set independently |
 
+The [package foundation](DEVELOPMENT.md) subsequently selects TypeScript 6.0.3 to stay within the current typescript-eslint support range. The 7.0.2 result above remains the historical standalone probe result, not the final foundation compiler selection.
+
 Homebridge 2.4.0 declares Node `^22 || ^24 || ^26`. UI 5.29.0 declares Node `^22.12.0 || ^24.0.0 || ^26.0.0`. Satisfying those package engines alone is insufficient to select a runtime for iHost.
 
 Node's [22.x platform table](https://github.com/nodejs/node/blob/v22.x/BUILDING.md#platform-list) lists GNU/Linux ARMv7 as Tier 1 with kernel >=4.18 and glibc >=2.28. The observed kernel/libc exceed those minima. Its [24.x table](https://github.com/nodejs/node/blob/v24.x/BUILDING.md#platform-list) downgrades ARMv7 to Experimental. This is why Node 24 is not the default for this 32-bit deployment. This comparison covers the documented kernel/libc floors, not every property of the physical device or future dependency.
