@@ -1,6 +1,6 @@
 # Aqua Temp protocol discovery
 
-Updated 2026-09-08 for [issue #2](https://github.com/deanvanniekerk/homebridge-aqua-temp/issues/2). **Discovery remains incomplete; the device profile is not approved for controls.** Authentication, shared discovery, selected sensor readings and the app power-state mapping are established. Compressor semantics and a reliable write contract remain unresolved.
+Updated 2026-09-08 for [issue #2](https://github.com/deanvanniekerk/homebridge-aqua-temp/issues/2). **Issue #2 is closed at the owner's request; discovery remains incomplete and the device profile is not approved for controls.** Authentication, shared discovery, selected sensor readings and the app power-state mapping are established. Compressor semantics and a reliable write contract remain unresolved.
 
 The final live observation restored the owner's original configuration: **app Off, Heat mode, target 32°C, cloud ONLINE**. No live experiment is active. This document describes observed vendor behavior, not an official API guarantee.
 
@@ -133,4 +133,4 @@ The next useful evidence is **read-only app parameter/status pages showing codes
 
 For unsupported app-selected modes, retain unambiguous readings and use the [SPEC.md §4](SPEC.md#4-apple-home-behavior) communication/error policy for unrepresentable state; never switch back to Heat during discovery or polling. A verified non-Heat mode can be treated as unsupported without guessing its label, but absence of reliable current activity remains a separate blocker.
 
-Issue #2 is **not complete** while its core activity and write contracts are unresolved. This evidence can be committed as progress, but must not produce a PR claiming `Closes #2` or unblock implementation as if discovery passed. Resolving a missing core feature requires evidence or an explicit product-scope decision, not a fabricated mapping.
+The owner directed administrative closure of issue #2 and continuation with issue #3 (package foundation and CI), which depends on runtime discovery rather than this protocol gate. Closing the issue does not verify the missing activity/write contracts or approve speculative controls. Preserve the unresolved requirements above before implementing the device profile or live commands.
