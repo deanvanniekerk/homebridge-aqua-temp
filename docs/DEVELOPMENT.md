@@ -2,6 +2,8 @@
 
 This package is an original dynamic-platform foundation for issue #3. It registers `AquaTemp`, retains restored accessory references, receives Homebridge launch/shutdown events, and takes HAP from `api.hap`. It does not contact Aqua Temp, discover devices, expose controls, or configure existing hardware. Accessory binding and stale-state handling belong to the later adapter work.
 
+Issue #4 adds a tested internal [cloud transport and session client](CLOUD_CLIENT.md). It is not wired to the platform; account configuration and heater controls remain unavailable.
+
 ## Selected tools
 
 Versions checked on 2026-09-08; direct development dependencies are exact and transitive versions are committed in `package-lock.json`.
@@ -35,7 +37,7 @@ npm run build
 npm test
 ```
 
-`npm run check` runs formatting, lint, typecheck and tests together. Tests invoke `npm pack`, whose prepack hook rebuilds `dist` from scratch. `npm run format` applies formatting. `npm pack` creates a development tarball; it does not publish it.
+`npm run check` runs formatting, lint, typecheck and tests together. `npm test` builds before loading the client tests, and the package tests invoke `npm pack`, whose prepack hook independently rebuilds `dist` from scratch. `npm run format` applies formatting. `npm pack` creates a development tarball; it does not publish it.
 
 Tests may download public npm dependencies for an isolated consumer host. They use only synthetic Homebridge configuration in temporary directories, bind HAP to loopback on an ephemeral port, and never read the real account or Homebridge configuration. Two package-level contracts are checked:
 
