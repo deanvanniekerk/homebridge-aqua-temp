@@ -56,15 +56,21 @@
         "type": "boolean",
         "default": false
       },
-      "includePowerSwitch": {
-        "title": "Include separate Power switch",
-        "description": "Optional independent power accessory. Off remains usable when other capabilities are unknown; On currently requires verified Heat mode. Restart to apply.",
+      "includeInletTemperatureSensor": {
+        "title": "Include inlet temperature sensor",
+        "description": "Add a separate read-only inlet temperature accessory. Restart to apply.",
         "type": "boolean",
         "default": false
       },
-      "includeWaterTemperatureSensor": {
-        "title": "Include separate Water Temperature sensor",
-        "description": "Optional independent inlet water temperature accessory that does not depend on thermostat activity or target support. Restart to apply.",
+      "includeOutletTemperatureSensor": {
+        "title": "Include outlet temperature sensor",
+        "description": "Add a separate read-only outlet temperature accessory. Restart to apply.",
+        "type": "boolean",
+        "default": false
+      },
+      "includeAmbientTemperatureSensor": {
+        "title": "Include ambient temperature sensor",
+        "description": "Add a separate read-only ambient temperature accessory. Restart to apply.",
         "type": "boolean",
         "default": false
       }

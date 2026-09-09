@@ -129,7 +129,7 @@ test('real HAP reads fail before freshness, then expose verified telemetry and c
   assert.equal(h.writes.length, 0);
 });
 
-test('unrepresentable readings and activity never become rounded temperatures or guessed Off/Heat', async (t) => {
+test('unrepresentable core readings stay unavailable and known non-heating activity is idle in HAP', async (t) => {
   const h = await setup(t);
   await h.start();
   await h.change({ waterCelsius: available(20.55), activity: unknown, mode: unknown });
@@ -148,10 +148,7 @@ test('unrepresentable readings and activity never become rounded temperatures or
   assert.equal(await h.get('CurrentHeatingCoolingState').handleGetRequest(), 1);
   for (const activity of ['defrost', 'flow-fault']) {
     await h.change({ activity: available(activity) });
-    await assert.rejects(
-      h.get('CurrentHeatingCoolingState').handleGetRequest(),
-      communicationFailure,
-    );
+    assert.equal(await h.get('CurrentHeatingCoolingState').handleGetRequest(), 0);
   }
   await h.change({
     activity: available('idle'),
@@ -307,4 +304,43 @@ test('legacy cached read-only target-state permissions are restored on upgrade',
   assert.ok(h.get('TargetHeatingCoolingState').props.perms.includes('pw'));
   await h.get('TargetHeatingCoolingState').handleSetRequest(0);
   assert.equal(await h.get('TargetHeatingCoolingState').handleGetRequest(), 0);
+});
+
+test('unknown compressor activity keeps fresh HAP controls usable with a demand estimate', async (t) => {
+  const h = await setup(t, { readings: { activity: unknown } });
+  await h.start();
+  for (const [power, mode, water, target, expected] of [
+    ['off', 'cool', 21.5, 20, 0],
+    ['on', 'heat', 20, 25, 1],
+    ['on', 'heat', 26, 25, 0],
+    ['on', 'cool', 26, 25, 2],
+    ['on', 'cool', 20, 25, 0],
+    ['on', 'auto', 20, 25, 1],
+    ['on', 'auto', 26, 25, 2],
+    ['on', 'auto', 25, 25, 0],
+  ]) {
+    await h.change({
+      power: available(power),
+      mode: available(mode),
+      waterCelsius: available(water),
+      reportedTargetCelsius: available(target),
+    });
+    assert.equal(await h.get('CurrentHeatingCoolingState').handleGetRequest(), expected);
+    assert.equal(await h.get('TargetTemperature').handleGetRequest(), target);
+    assert.equal(
+      h.coordinator.state(device.id).readings.activity.available,
+      false,
+      'presentation does not invent a measured state',
+    );
+  }
+  await h.get('TargetTemperature').handleSetRequest(25.5);
+  assert.equal(await h.get('TargetTemperature').handleGetRequest(), 25.5);
+  await h.get('TargetHeatingCoolingState').handleSetRequest(0);
+  assert.equal(await h.get('CurrentHeatingCoolingState').handleGetRequest(), 0);
+  await h.change({ power: available('on'), mode: available('heat'), fault: available(true) });
+  assert.equal(
+    await h.get('CurrentHeatingCoolingState').handleGetRequest(),
+    0,
+    'no estimate of useful heating during a reported fault',
+  );
 });

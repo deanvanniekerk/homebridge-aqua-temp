@@ -10,9 +10,17 @@ The development platform connects to Aqua Temp for discovery, readings and the l
 
 ## Optional accessories
 
-`includePowerSwitch` and `includeWaterTemperatureSensor` are independent booleans, both **false by default**. Enable either in the plugin settings and restart the child bridge to add a separate Power switch or inlet Water Temperature sensor for each selected, supported device. The default layout retains only the existing thermostat.
+The only optional accessories are three independent, read-only temperature sensors, all **false by default**:
 
-The additional accessories use stable identities and the same polling session; they do not add cloud requests. The water sensor does not depend on the target, mode or compressor activity. Power Off does not depend on a supported target or mode; Power On preserves the observed Heat/Cool/Auto selection and requires a valid retained target and fresh, clear fault status. A concurrent external mode change rejects the request; the Power switch never changes mode. A stale/offline device still becomes unavailable. Their behavior is covered with real HAP tests; the separate-accessory presentation has not yet been validated in Apple Home on iHost.
+| Configuration option              | Accessory           | Reading            |
+| --------------------------------- | ------------------- | ------------------ |
+| `includeInletTemperatureSensor`   | Inlet Temperature   | Inlet water (T02)  |
+| `includeOutletTemperatureSensor`  | Outlet Temperature  | Outlet water (T03) |
+| `includeAmbientTemperatureSensor` | Ambient Temperature | Ambient air (T05)  |
+
+Enable any combination in plugin settings and restart the child bridge. The default layout contains only the thermostat. Sensors use separate stable identities and the same polling session, without additional cloud requests. A missing or unsupported sensor reading makes only that sensor unavailable; temperature sensors do not depend on target, mode, power or compressor activity. Stale/offline data remains unavailable. Local real-HAP tests cover their behavior; Apple Home presentation is left to owner testing.
+
+The earlier development options `includePowerSwitch` and `includeWaterTemperatureSensor` are retired and ignored. Their old cached accessories are removed when starting with valid configuration. Enable the explicit inlet option if you previously used the Water sensor. No optional Power switch is exposed.
 
 Disabling an option and restarting removes that optional accessory. Re-enabling uses the same generated identity, but removal can lose its Apple Home room assignments or automations. Temporary missing telemetry never removes accessories. Credentials and telemetry are not stored in accessory context.
 

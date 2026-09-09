@@ -152,10 +152,9 @@ test('explicit mode selection confirms Mode while Off before issuing Power, and 
   assert.deepEqual(h.writes, [], 'ordinary power switches cannot change mode');
 });
 
-test('real HAP handlers expose all modes, bind targets, preserve mode on the optional switch, and retain out-of-range values', async (t) => {
+test('real HAP handlers expose all modes, bind targets, and retain out-of-range values', async (t) => {
   const { HomebridgeAPI } = await import('../node_modules/homebridge/dist/api.js');
   const { Thermostat } = await import('../dist/thermostat.js');
-  const { BasicAccessory } = await import('../dist/basic-accessory.js');
   const h = await setup(t);
   const coordinator = new AccountCoordinator(h.gateway);
   const updates = coordinator.updates(AbortSignal.timeout(2000));
@@ -163,19 +162,15 @@ test('real HAP handlers expose all modes, bind targets, preserve mode on the opt
   for await (const snapshot of updates) if (snapshot.devices[0]?.readings) break;
   const api = new HomebridgeAPI();
   const accessory = new api.platformAccessory('Modes', api.hap.uuid.generate('modes'));
-  const power = new api.platformAccessory('Power', api.hap.uuid.generate('mode-power'));
   const thermostat = new Thermostat(api.hap, accessory, coordinator, h.device.id, () => {});
-  const basic = new BasicAccessory(api.hap, power, coordinator, h.device.id, 'power');
   t.after(() => {
     thermostat.close();
-    basic.close();
     coordinator.close();
   });
   const C = api.hap.Characteristic;
   const service = accessory.getService(api.hap.Service.Thermostat);
   const state = service.getCharacteristic(C.TargetHeatingCoolingState);
   const target = service.getCharacteristic(C.TargetTemperature);
-  const on = power.getService(api.hap.Service.Switch).getCharacteristic(C.On);
   assert.deepEqual(state.props.validValues, [0, 1, 2, 3]);
   await state.handleSetRequest(C.TargetHeatingCoolingState.AUTO);
   thermostat.update();
@@ -183,9 +178,6 @@ test('real HAP handlers expose all modes, bind targets, preserve mode on the opt
   assert.equal(await target.handleGetRequest(), 30);
   await target.handleSetRequest(30.5);
   assert.deepEqual(h.writes.at(-1), ['R03', '30.5']);
-  await on.handleSetRequest(false);
-  await on.handleSetRequest(true);
-  assert.equal(h.state.Mode, '2', 'power switch never selects Heat');
   await state.handleSetRequest(C.TargetHeatingCoolingState.OFF);
   await state.handleSetRequest(C.TargetHeatingCoolingState.COOL);
   thermostat.update();

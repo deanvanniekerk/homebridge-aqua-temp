@@ -41,7 +41,11 @@ async function host(t, extraConfig = {}, cached = [], scenario = 'online') {
       deviceList: scenario === 'empty' ? [] : [device],
       getMyAppectDeviceShareDataList: scenario === 'empty' ? [] : [device],
       getDeviceStatus: { status: 'ONLINE' },
-      getDataByCode: [{ code: 'T02', value: '20.5', dataType: 'TEMP' }],
+      getDataByCode: [
+        { code: 'T02', value: '20.5', dataType: 'TEMP' },
+        { code: 'T03', value: '22', dataType: 'TEMP' },
+        { code: 'T05', value: '18', dataType: 'TEMP' },
+      ],
     }[path];
     reply(response, path === 'login' ? login : success(result));
   });
@@ -58,7 +62,7 @@ async function host(t, extraConfig = {}, cached = [], scenario = 'online') {
       const item = accessories[0];
       if (hostCache.has(item.UUID)) return; // Homebridge skips cached UUID collisions.
       hostCache.set(item.UUID, item);
-      if (!failedRegistration && item.context.role === 'power') {
+      if (!failedRegistration && item.context.role === 'outlet') {
         failedRegistration = true;
         throw new Error('synthetic-private-after-cache-insertion');
       }
@@ -66,7 +70,7 @@ async function host(t, extraConfig = {}, cached = [], scenario = 'online') {
     if (
       scenario === 'registration-failure' &&
       !failedRegistration &&
-      accessories[0].context.role === 'power'
+      accessories[0].context.role === 'outlet'
     ) {
       failedRegistration = true;
       throw new Error('synthetic-private-registration-error');
@@ -126,15 +130,20 @@ function current(api, accessory) {
 }
 
 test('platform registers one namespaced identity, restores it before fresh reads and retains temporary omissions', async (t) => {
-  const cold = await host(t, { includePowerSwitch: true, includeWaterTemperatureSensor: true });
+  const cold = await host(t, {
+    includeOutletTemperatureSensor: true,
+    includeInletTemperatureSensor: true,
+    includeAmbientTemperatureSensor: true,
+  });
   await cold.launch();
   await waitUntil(
-    () => cold.registered.length === 3 && current(cold.api, cold.registered[0]).value === 20.5,
+    () => cold.registered.length === 4 && current(cold.api, cold.registered[0]).value === 20.5,
   );
   const accessory = cold.registered.find((item) => !item.context.role);
-  const power = cold.registered.find((item) => item.context.role === 'power');
-  const water = cold.registered.find((item) => item.context.role === 'water');
-  assert.ok(power.getService(cold.api.hap.Service.Switch));
+  const power = cold.registered.find((item) => item.context.role === 'outlet');
+  const water = cold.registered.find((item) => item.context.role === 'inlet');
+  assert.ok(power.getService(cold.api.hap.Service.TemperatureSensor));
+  assert.ok(cold.registered.every((a) => !a.getService(cold.api.hap.Service.Switch)));
   assert.equal(
     await water
       .getService(cold.api.hap.Service.TemperatureSensor)
@@ -142,7 +151,7 @@ test('platform registers one namespaced identity, restores it before fresh reads
       .handleGetRequest(),
     20.5,
   );
-  assert.equal(new Set(cold.registered.map((item) => item.UUID)).size, 3);
+  assert.equal(new Set(cold.registered.map((item) => item.UUID)).size, 4);
   assert.equal(accessory.UUID, uuid(cold.api));
   assert.equal(accessory._associatedPlugin, PLUGIN_NAME);
   assert.equal(await current(cold.api, accessory).handleGetRequest(), 20.5);
@@ -151,11 +160,15 @@ test('platform registers one namespaced identity, restores it before fresh reads
   cold.stop();
   const warm = await host(
     t,
-    { includePowerSwitch: true, includeWaterTemperatureSensor: true },
+    {
+      includeOutletTemperatureSensor: true,
+      includeInletTemperatureSensor: true,
+      includeAmbientTemperatureSensor: true,
+    },
     cold.registered.map((item) => cold.api.platformAccessory.serialize(item)),
     'empty',
   );
-  assert.equal(warm.restored.length, 3);
+  assert.equal(warm.restored.length, 4);
   await assert.rejects(
     current(warm.api, warm.restored[0]).handleGetRequest(),
     (error) => error === -70402,
@@ -221,14 +234,18 @@ test('real login denial before discovery reaches sanitized normal/debug diagnost
 test('one accessory registration failure is retried without stopping other capabilities or exposing raw errors', async (t) => {
   const h = await host(
     t,
-    { includePowerSwitch: true, includeWaterTemperatureSensor: true },
+    {
+      includeOutletTemperatureSensor: true,
+      includeInletTemperatureSensor: true,
+      includeAmbientTemperatureSensor: true,
+    },
     [],
     'registration-failure',
   );
   await h.launch();
-  await waitUntil(() => h.registered.length === 3);
-  assert.equal(new Set(h.registered.map((item) => item.UUID)).size, 3);
-  const water = h.registered.find((item) => item.context.role === 'water');
+  await waitUntil(() => h.registered.length === 4);
+  assert.equal(new Set(h.registered.map((item) => item.UUID)).size, 4);
+  const water = h.registered.find((item) => item.context.role === 'inlet');
   assert.equal(
     await water
       .getService(h.api.hap.Service.TemperatureSensor)
@@ -243,43 +260,73 @@ test('one accessory registration failure is retried without stopping other capab
   assert.doesNotMatch(h.logs.join('\n'), /synthetic-private|updates stopped/);
 });
 
-test('fallback accessories default off, can be selected independently, and are removed when disabled', async (t) => {
+test('temperature accessories default off, can be selected independently, and are removed when disabled', async (t) => {
   const defaults = await host(t);
   await defaults.launch();
   await waitUntil(() => defaults.registered.length === 1);
   assert.equal(defaults.registered[0].context.role, undefined);
   defaults.stop();
-  const waterOnly = await host(t, { includeWaterTemperatureSensor: true });
+  const waterOnly = await host(t, { includeInletTemperatureSensor: true });
   await waterOnly.launch();
   await waitUntil(() => waterOnly.registered.length === 2);
   assert.deepEqual(
     waterOnly.registered.map((a) => a.context.role),
-    [undefined, 'water'],
+    [undefined, 'inlet'],
   );
   const cached = waterOnly.registered.map((a) => waterOnly.api.platformAccessory.serialize(a));
   waterOnly.stop();
   const disabled = await host(t, {}, cached);
   await disabled.launch();
   assert.equal(disabled.removed.length, 1);
-  assert.equal(disabled.removed[0].context.role, 'water');
+  assert.equal(disabled.removed[0].context.role, 'inlet');
   assert.equal(disabled.registered.length, 0);
 });
 
 test('registration rollback clears a partially inserted host cache entry before retry', async (t) => {
   const h = await host(
     t,
-    { includePowerSwitch: true, includeWaterTemperatureSensor: true },
+    {
+      includeOutletTemperatureSensor: true,
+      includeInletTemperatureSensor: true,
+      includeAmbientTemperatureSensor: true,
+    },
     [],
     'partial-registration',
   );
   await h.launch();
-  await waitUntil(() => h.registered.length === 3);
+  await waitUntil(() => h.registered.length === 4);
   assert.equal(h.removed.length, 1);
-  assert.equal(h.removed[0].context.role, 'power');
-  assert.equal(new Set(h.registered.map((a) => a.UUID)).size, 3);
+  assert.equal(h.removed[0].context.role, 'outlet');
+  assert.equal(new Set(h.registered.map((a) => a.UUID)).size, 4);
   assert.equal(
     h.logs.filter((line) => line.includes('Accessory capability temporarily unavailable')).length,
     1,
   );
   assert.doesNotMatch(h.logs.join('\n'), /synthetic-private/);
+});
+
+test('retired Power and Water accessories are removed without creating extra thermostats', async (t) => {
+  const api = new HomebridgeAPI();
+  const cached = ['power', 'water'].map((role) => {
+    const accessory = new api.platformAccessory(
+      'Old accessory',
+      api.hap.uuid.generate(`${PLUGIN_NAME}:device:${device.deviceCode}:${role}`),
+    );
+    accessory.context = { deviceId: device.deviceCode, role };
+    api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+    return api.platformAccessory.serialize(accessory);
+  });
+  const h = await host(
+    t,
+    { includePowerSwitch: true, includeWaterTemperatureSensor: true },
+    cached,
+  );
+  assert.equal(h.removed.length, 0, 'retirement waits until cached accessories are attached');
+  await h.launch();
+  await waitUntil(() => h.registered.length === 1);
+  assert.deepEqual(
+    h.removed.map((a) => a.context.role),
+    ['power', 'water'],
+  );
+  assert.equal(h.registered[0].context.role, undefined);
 });

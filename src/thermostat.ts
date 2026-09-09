@@ -140,14 +140,24 @@ export class Thermostat {
     });
     this.bind(service.getCharacteristic(C.CurrentHeatingCoolingState), () => {
       const readings = this.readings();
-      if (readings.fault.available && readings.fault.value) throw this.unavailable();
-      const activity = this.value(readings.activity);
-      if (activity === 'idle') return C.CurrentHeatingCoolingState.OFF;
-      if (activity === 'heating' && this.value(readings.power) === 'on') {
-        if (this.value(readings.mode) !== 'heat') throw this.unavailable();
-        return C.CurrentHeatingCoolingState.HEAT;
+      const power = this.value(readings.power);
+      if (power === 'off') return C.CurrentHeatingCoolingState.OFF;
+      const mode = this.value(readings.mode);
+      if (readings.fault.available && readings.fault.value) return C.CurrentHeatingCoolingState.OFF;
+      if (readings.activity.available) {
+        return readings.activity.value === 'heating' && mode === 'heat'
+          ? C.CurrentHeatingCoolingState.HEAT
+          : C.CurrentHeatingCoolingState.OFF;
       }
-      throw this.unavailable();
+      // HAP has no unknown activity value. Estimate demand for presentation only;
+      // never use this estimate to issue commands or claim measured compressor output.
+      const water = this.value(readings.waterCelsius);
+      const target = this.value(readings.reportedTargetCelsius);
+      if ((mode === 'heat' || mode === 'auto') && water < target)
+        return C.CurrentHeatingCoolingState.HEAT;
+      if ((mode === 'cool' || mode === 'auto') && water > target)
+        return C.CurrentHeatingCoolingState.COOL;
+      return C.CurrentHeatingCoolingState.OFF;
     });
     const units = service.getCharacteristic(C.TemperatureDisplayUnits);
     this.bind(units, () =>

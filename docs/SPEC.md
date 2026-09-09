@@ -60,7 +60,7 @@ Use Homebridge's supplied HAP API and a standard Thermostat service as the propo
 | Current temperature | Show the verified water sensor reading in Celsius internally; let HomeKit handle display units. Missing, invalid or stale data must not turn into zero or the target temperature. |
 | Target temperature | Advertise the intersection of verified device constraints and supported HAP constraints. Reject unsupported values before network traffic; no silent clamping or invented default range. |
 | Target state | Expose Off plus the verified Heat/Cool/Auto modes for that device profile. Treat power and vendor mode separately; verify mode-specific targets and explicit transitions. Never change mode merely on discovery, polling, startup or recovery. |
-| Operating state | Map confirmed device activity to heating or idle/off semantics. A powered device below its target is not sufficient proof that it is heating. Flow faults, defrost, delays and unsupported states must not be misrepresented. |
+| Operating state | Preserve unknown measured activity in the domain model. For Home presentation, requested Off displays Off; known inactivity or a reported fault displays idle. While On with unknown activity, estimate demand from mode and temperatures so valid controls remain usable. Document that this indicator cannot prove compressor operation or identify defrost/protection. |
 | Unexpected mode | When the app selects an unsupported mode, preserve unambiguous telemetry and independently verified controls. Isolate the unsupported capability, show a bounded explanation and recover it automatically when supported data returns. Verify the resulting Home UI; do not fabricate Off or Heat. |
 | Unavailable state | Use communication errors for actual offline/stale/unreachable data. Unsupported capability handling must not unnecessarily make otherwise supported functionality unusable. Choose a representable fallback and verify it in Apple Home; do not guess a numeric state or assume custom fault fields render visibly. Retain last known values internally with age for diagnostics. |
 | External changes | Reconcile app/device changes through polling without overwriting them. |
@@ -140,6 +140,10 @@ Choose a distinct npm package identity because the unscoped reference name is al
 Ship compiled files, configuration schema, README and license through an explicit package allowlist. Verify install from the tarball without repository files or development dependencies. Publish through an authenticated, least-privilege release workflow; prefer npm trusted publishing/provenance where supported. No npm publication is authorized by the planning task itself.
 
 Document backup, disabling the old plugin, configuring the account and device selection, child-bridge pairing, re-creating affected Apple Home automations, verification, and rollback to the old plugin/configuration. Do not clear unrelated Homebridge accessory caches. Record verified compatibility rather than promising all Aqua Temp devices work.
+
+### Activity presentation clarification, 2026-09-09
+
+The owner rejected unknown compressor telemetry making the primary thermostat unavailable, especially because the raw compressor value is not exposed. This supersedes the earlier prohibition on a presentation estimate only: domain activity remains unknown, but the HAP current-state field may estimate demand from mode and temperatures while On. Confirmed requested Off displays Off. The estimate is never used for commands or claimed as measured operation. The owner subsequently restricted optional accessories to inlet, outlet and ambient temperature sensors, each independently configurable and false by default. The Power switch and old Water option are retired. Validation of the final changes is local code testing only; install the final build, then hand pairing and end-to-end testing to the owner.
 
 ## 9. Evidence and limitations
 

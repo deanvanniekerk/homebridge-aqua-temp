@@ -27,6 +27,7 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
     { accessory: Accessory; presentation: Thermostat | BasicAccessory }
   >();
   readonly #shutdown = new AbortController();
+  readonly #retired = new Set<Accessory>();
   readonly #diagnostics: Diagnostics | undefined;
   readonly #config: AquaTempConfig | undefined;
   readonly #coordinator: AccountCoordinator | undefined;
@@ -41,6 +42,7 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
       this.#coordinator?.close();
       for (const entry of this.#accessories.values()) entry.presentation.close();
       this.#accessories.clear();
+      this.#retired.clear();
     });
     try {
       this.#config = parseConfig(config);
@@ -77,8 +79,15 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
     const context: unknown = accessory.context;
     const id = isRecord(context) && typeof context.deviceId === 'string' ? context.deviceId : '';
     const units = isRecord(context) && context.displayUnits === 1 ? 1 : 0;
+    // Retired development accessories must not be restored as thermostats.
+    if (isRecord(context) && (context.role === 'power' || context.role === 'water')) {
+      const legacyUuid = this.#api.hap.uuid.generate(`${PLUGIN_NAME}:device:${id}:${context.role}`);
+      if (id && accessory.UUID === legacyUuid) this.#retired.add(accessory);
+      return;
+    }
     const role: Role =
-      isRecord(context) && (context.role === 'power' || context.role === 'water')
+      isRecord(context) &&
+      (context.role === 'inlet' || context.role === 'outlet' || context.role === 'ambient')
         ? context.role
         : 'thermostat';
     accessory.context = {
@@ -111,17 +120,23 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
   private enabled(role: Role): boolean {
     return (
       role === 'thermostat' ||
-      (role === 'power' && this.#config?.includePowerSwitch === true) ||
-      (role === 'water' && this.#config?.includeWaterTemperatureSensor === true)
+      (role === 'inlet' && this.#config?.includeInletTemperatureSensor === true) ||
+      (role === 'outlet' && this.#config?.includeOutletTemperatureSensor === true) ||
+      (role === 'ambient' && this.#config?.includeAmbientTemperatureSensor === true)
     );
   }
 
   private removeExcluded(): void {
     if (!this.#config) return;
+    // Cache restoration attaches HAP after configureAccessory returns; retire after launch.
+    for (const accessory of this.#retired)
+      this.#api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+    this.#retired.clear();
     for (const [uuid, entry] of this.#accessories) {
       const id = entry.accessory.context.deviceId;
       const role = entry.accessory.context.role;
-      const kind = role === 'power' || role === 'water' ? role : 'thermostat';
+      const kind =
+        role === 'inlet' || role === 'outlet' || role === 'ambient' ? role : 'thermostat';
       if (typeof id !== 'string' || !id || this.uuid(id, kind) !== uuid) continue;
       if (this.selected(id) && this.enabled(kind)) continue;
       this.#api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [entry.accessory]);
@@ -152,12 +167,17 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
     this.#diagnostics?.observe(snapshot);
     for (const state of snapshot.devices) {
       if (!this.selected(state.device.id) || state.device.profile !== 'boost-i-hp40') continue;
-      for (const role of ['thermostat', 'power', 'water'] as const) {
+      for (const role of ['thermostat', 'inlet', 'outlet', 'ambient'] as const) {
         if (!this.enabled(role)) continue;
         const uuid = this.uuid(state.device.id, role);
         if (this.#accessories.has(uuid)) continue;
         try {
-          const suffix = role === 'power' ? ' Power' : role === 'water' ? ' Water Temperature' : '';
+          const suffix = {
+            thermostat: '',
+            inlet: ' Inlet Temperature',
+            outlet: ' Outlet Temperature',
+            ambient: ' Ambient Temperature',
+          }[role];
           const accessory = new this.#api.platformAccessory(
             `${this.#config?.name ?? 'Aqua Temp'}${suffix}`,
             uuid,
