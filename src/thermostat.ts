@@ -1,6 +1,6 @@
 import type { API, Characteristic, PlatformAccessory } from 'homebridge';
 import type { AccountCoordinator } from './coordinator.js';
-import type { DeviceCommand, Reading } from './device-model.js';
+import type { DeviceCommand, OperatingMode, Reading } from './device-model.js';
 import { CloudError } from './cloud-error.js';
 import { CommandError } from './command-queue.js';
 
@@ -99,25 +99,43 @@ export class Thermostat {
       const range = this.range();
       if (!range) throw this.unavailable();
       if (typeof value !== 'number' || !this.includes(range, value)) throw this.invalid();
-      await this.command({ kind: 'target-temperature', celsius: value });
+      await this.command({
+        kind: 'target-temperature',
+        mode: this.value(this.readings().mode),
+        celsius: value,
+      });
     });
     this.#targetState = service.getCharacteristic(C.TargetHeatingCoolingState).setProps({
       perms: [...new C.TargetHeatingCoolingState().props.perms],
-      validValues: [C.TargetHeatingCoolingState.OFF, C.TargetHeatingCoolingState.HEAT],
+      validValues: [
+        C.TargetHeatingCoolingState.OFF,
+        C.TargetHeatingCoolingState.HEAT,
+        C.TargetHeatingCoolingState.COOL,
+        C.TargetHeatingCoolingState.AUTO,
+      ],
     });
+    const modes = new Map<OperatingMode, number>([
+      ['heat', C.TargetHeatingCoolingState.HEAT],
+      ['cool', C.TargetHeatingCoolingState.COOL],
+      ['auto', C.TargetHeatingCoolingState.AUTO],
+    ]);
     this.bind(this.#targetState, () => {
       const readings = this.readings();
       if (this.value(readings.power) === 'off') return C.TargetHeatingCoolingState.OFF;
-      if (this.value(readings.mode) !== 'heat') throw this.unavailable();
-      return C.TargetHeatingCoolingState.HEAT;
+      const value = modes.get(this.value(readings.mode));
+      if (value === undefined) throw this.unavailable();
+      return value;
     });
     this.#targetState.onSet(async (value) => {
-      if (value !== C.TargetHeatingCoolingState.OFF && value !== C.TargetHeatingCoolingState.HEAT)
-        throw this.invalid();
-      if (value !== C.TargetHeatingCoolingState.OFF && !this.range()) throw this.unavailable();
+      const state =
+        value === C.TargetHeatingCoolingState.OFF
+          ? 'off'
+          : [...modes].find(([, hapValue]) => hapValue === value)?.[0];
+      if (!state) throw this.invalid();
       await this.command({
         kind: 'target-state',
-        state: value === C.TargetHeatingCoolingState.OFF ? 'off' : 'heat',
+        state,
+        ...(state === 'off' ? {} : { allowModeChange: true }),
       });
     });
     this.bind(service.getCharacteristic(C.CurrentHeatingCoolingState), () => {

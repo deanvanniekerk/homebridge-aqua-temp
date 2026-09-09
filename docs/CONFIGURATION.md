@@ -6,13 +6,13 @@ Ajv 8.20.0 is an exact development-only dependency used to compare real JSON Sch
 
 The platform validates configuration during construction. A rejected configuration emits an actionable, value-free message and does not install the launch callback; Homebridge remains running. A clean tarball installation test checks valid startup, restart, rejected configuration without credential leakage, and recovery after fixing the configuration.
 
-The development platform connects to Aqua Temp for discovery, readings and the limited Heat controls described in DEVICE_MODEL.md. The platform observes coordinator snapshots and provides the diagnostic behavior below, including account failures before any device is discovered.
+The development platform connects to Aqua Temp for discovery, readings and the limited mode controls described in DEVICE_MODEL.md. The platform observes coordinator snapshots and provides the diagnostic behavior below, including account failures before any device is discovered.
 
 ## Optional accessories
 
 `includePowerSwitch` and `includeWaterTemperatureSensor` are independent booleans, both **false by default**. Enable either in the plugin settings and restart the child bridge to add a separate Power switch or inlet Water Temperature sensor for each selected, supported device. The default layout retains only the existing thermostat.
 
-The additional accessories use stable identities and the same polling session; they do not add cloud requests. The water sensor does not depend on the target, mode or compressor activity. Power Off does not depend on a supported target or mode; Power On currently requires the verified Heat contract and fresh, clear fault status. These options do not enable unverified Cool/Auto writes. A stale/offline device still becomes unavailable. Their behavior is covered with real HAP tests; the separate-accessory presentation has not yet been validated in Apple Home on iHost.
+The additional accessories use stable identities and the same polling session; they do not add cloud requests. The water sensor does not depend on the target, mode or compressor activity. Power Off does not depend on a supported target or mode; Power On preserves the observed Heat/Cool/Auto selection and requires a valid retained target and fresh, clear fault status. A concurrent external mode change rejects the request; the Power switch never changes mode. A stale/offline device still becomes unavailable. Their behavior is covered with real HAP tests; the separate-accessory presentation has not yet been validated in Apple Home on iHost.
 
 Disabling an option and restarting removes that optional accessory. Re-enabling uses the same generated identity, but removal can lose its Apple Home room assignments or automations. Temporary missing telemetry never removes accessories. Credentials and telemetry are not stored in accessory context.
 

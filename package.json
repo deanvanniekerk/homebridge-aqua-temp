@@ -1,7 +1,7 @@
 {
   "name": "@deanvanniekerk/homebridge-aqua-temp",
   "version": "0.0.0-development.0",
-  "description": "Independent Aqua Temp Homebridge plugin with limited Heat controls and bounded cloud recovery",
+  "description": "Independent Aqua Temp Homebridge plugin with limited mode controls and bounded cloud recovery",
   "private": true,
   "type": "module",
   "main": "dist/index.js",

@@ -259,8 +259,8 @@ test('app-observed Cool and Auto targets stay independent of stale aliases and w
     assert.deepEqual(state.reportedTargetCelsius, { available: true, value: target });
     assert.equal(
       state.control.available,
-      false,
-      'reading evidence does not enable unverified writes',
+      target >= 8,
+      'stored targets outside the profile bounds remain readable but cannot enable On or target writes',
     );
     assert.deepEqual(state.activity, { available: true, value: 'idle' });
     assert.deepEqual(state.power, { available: true, value: 'off' });

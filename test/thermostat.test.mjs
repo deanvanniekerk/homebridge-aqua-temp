@@ -125,7 +125,7 @@ test('real HAP reads fail before freshness, then expose verified telemetry and c
   assert.equal(h.get('TargetTemperature').props.minValue, 10);
   assert.equal(h.get('TargetTemperature').props.maxValue, 38);
   assert.equal(h.get('TargetTemperature').props.minStep, 0.5);
-  assert.deepEqual(h.get('TargetHeatingCoolingState').props.validValues, [0, 1]);
+  assert.deepEqual(h.get('TargetHeatingCoolingState').props.validValues, [0, 1, 2, 3]);
   assert.equal(h.writes.length, 0);
 });
 
@@ -177,7 +177,7 @@ test('HAP setters validate before traffic, wait for confirmation and persist onl
       (error) => error === -70410,
     );
   }
-  for (const invalid of [2, 3, '1']) {
+  for (const invalid of [-1, 4, '1']) {
     await assert.rejects(
       h.get('TargetHeatingCoolingState').handleSetRequest(invalid),
       (error) => error === -70410,
@@ -287,9 +287,9 @@ test('newly recognized modes never masquerade as Heat and missing target does no
       control: unknown,
       reportedTargetCelsius: unknown,
     });
-    await assert.rejects(
-      h.get('TargetHeatingCoolingState').handleGetRequest(),
-      communicationFailure,
+    assert.equal(
+      await h.get('TargetHeatingCoolingState').handleGetRequest(),
+      mode === 'cool' ? 2 : 3,
     );
     assert.ok(h.get('TargetHeatingCoolingState').props.perms.includes('pw'));
     await h.get('TargetHeatingCoolingState').handleSetRequest(0);

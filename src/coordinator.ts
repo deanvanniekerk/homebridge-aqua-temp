@@ -1,3 +1,4 @@
+import { isOperatingMode } from './device-model.js';
 import { CloudError, isRecord, type CloudErrorCategory } from './cloud-error.js';
 import {
   DeviceError,
@@ -360,11 +361,24 @@ function copyCommand(input: unknown): DeviceCommand {
     if (
       input.kind === 'target-temperature' &&
       typeof input.celsius === 'number' &&
-      Number.isFinite(input.celsius)
+      Number.isFinite(input.celsius) &&
+      (input.mode === undefined || isOperatingMode(input.mode))
     )
-      return Object.freeze({ kind: input.kind, celsius: input.celsius });
-    if (input.kind === 'target-state' && (input.state === 'off' || input.state === 'heat'))
-      return Object.freeze({ kind: input.kind, state: input.state });
+      return Object.freeze({
+        kind: input.kind,
+        celsius: input.celsius,
+        ...(input.mode === undefined ? {} : { mode: input.mode }),
+      });
+    if (
+      input.kind === 'target-state' &&
+      (input.state === 'off' || isOperatingMode(input.state)) &&
+      (input.allowModeChange === undefined || typeof input.allowModeChange === 'boolean')
+    )
+      return Object.freeze({
+        kind: input.kind,
+        state: input.state,
+        ...(input.allowModeChange === true ? { allowModeChange: true } : {}),
+      });
   }
   throw new CloudError('invalid-request');
 }
@@ -374,7 +388,7 @@ function confirms(readings: DeviceReadings, command: DeviceCommand): boolean {
   if (command.kind === 'target-temperature')
     return (
       readings.mode.available &&
-      readings.mode.value === 'heat' &&
+      readings.mode.value === (command.mode ?? 'heat') &&
       readings.reportedTargetCelsius.available &&
       readings.reportedTargetCelsius.value === command.celsius
     );
@@ -382,6 +396,8 @@ function confirms(readings: DeviceReadings, command: DeviceCommand): boolean {
     readings.power.available &&
     (command.state === 'off'
       ? readings.power.value === 'off'
-      : readings.power.value === 'on' && readings.mode.available && readings.mode.value === 'heat')
+      : readings.power.value === 'on' &&
+        readings.mode.available &&
+        readings.mode.value === command.state)
   );
 }

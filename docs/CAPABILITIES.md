@@ -1,6 +1,6 @@
 # Mode support and graceful fallback
 
-Scope expanded by the owner on 2026-09-09. This records the implementation and evidence checklist. Cool/Auto field decoding is implemented locally; their control writes and complete Home presentation remain unverified and disabled. The installed development plugin still supports only the existing Heat profile. The seven-day soak is deferred until the expanded behavior is settled and an exact build is selected.
+Scope expanded by the owner on 2026-09-09. This records the implementation and evidence checklist. Heat/Cool/Auto decoding and controls are implemented locally from the component trials recorded below. The combined Home mode/power flow and complete Home presentation remain unverified. The installed development plugin still supports only the existing Heat profile. The seven-day soak is deferred until the expanded behavior is settled and an exact build is selected.
 
 ## Product requirements
 
@@ -22,7 +22,7 @@ Scope expanded by the owner on 2026-09-09. This records the implementation and e
 
 Homebridge’s standard Thermostat target-state enum supports Off, Heat, Cool and Auto. Its current-activity enum only supports Off, Heat and Cool; there is no unknown activity value. See the [Homebridge current-activity definition](https://developers.homebridge.io/HAP-NodeJS/classes/_definitions.Characteristics.CurrentHeatingCoolingState.html). Actual macOS Home observation in #10 showed that an error for that required activity field can make the whole thermostat tile unavailable while other HAP reads still succeed.
 
-The implementation must evaluate a capability-based presentation, including independently usable standard power/temperature accessories if a complete thermostat cannot be represented truthfully. Such a fallback may change the visible Home layout and needs actual Home verification; it is not yet selected or shipped. Retaining the previous activity forever, substituting Idle for unknown activity, or removing a required characteristic is not an accepted resolution. Cool/Auto target semantics must be established before choosing the final standard Home representation, especially if Auto uses a single vendor setpoint rather than Home’s threshold model.
+The implementation must evaluate a capability-based presentation, including independently usable standard power/temperature accessories if a complete thermostat cannot be represented truthfully. Independent Power and Water Temperature accessories have been implemented locally as opt-in configuration, both default false. The layout still needs actual Home verification and is not installed. Retaining the previous activity forever, substituting Idle for unknown activity, or removing a required characteristic is not an accepted resolution. Cool/Auto target semantics must be established before choosing the final standard Home representation, especially if Auto uses a single vendor setpoint rather than Home’s threshold model.
 
 ## Read-only observation preparation
 
@@ -96,13 +96,11 @@ The original installed gateway was verified against SHA-256 `714830ae2d283df98c0
 
 At 07:59:21.538 UTC the live baseline was Heat, Off, R02=32, R01=8, R03=30 and O07=0. One `Mode=0` command passed a fresh preflight at 08:00:23.406 UTC and was acknowledged at **08:00:26.169 UTC**. No Power or target command was sent. The normal poll at **08:01:27.907 UTC** reported Mode=0, Power=0, Power_State=0, R01=8, Set_Temp=8, R02=32, R03=30, O07=0, Online and fault false. This establishes API readback for selecting Cool while Off, with stored targets preserved, on this device. The owner confirmed that Aqua Temp also showed Cool, 8°C and Off. The authorized restoration to Heat and helper cleanup are recorded below.
 
-
 ### Heat restoration and mode-helper cleanup
 
 The return command `Mode=1` passed its normal-poll preflight at 08:05:35.477 UTC and was acknowledged at **08:05:37.327 UTC**. Readback at **08:06:39.084 UTC** confirmed Mode=1, R02=32, Set_Temp=32, Power=0, Power_State=0, R01=8, R03=30 and O07=0, Online and fault false. No Power or target command was sent. Together with the owner's Cool/8/Off confirmation, this verifies the API Heat → Cool → Heat round trip while Off on this device; the owner subsequently confirmed the final Heat/32/Off screen. It does not establish mode changes while On or Auto API writes.
 
 The one-shot request was consumed and no command remained armed. Sanitized Cool and restored Heat snapshots/results were preserved privately on iHost. The enabled flag was removed, the gateway restored byte-for-byte to the recorded original SHA-256, and syntax checking passed. Only the Aqua Temp child was restarted to unload the helper; monitoring started at **08:08:02 UTC** and its HAP listener was verified. The helper was renamed `probe.mjs.disabled`. The installed build and accessory options remain unchanged. The next owner-assisted check is an Auto API mode round trip while Off, followed by separate target-write verification before production Cool/Auto controls can be enabled.
-
 
 ### Auto API selection while Off
 
@@ -110,13 +108,11 @@ The owner confirmed Heat/32°C/Off and readiness for a Heat → Auto → Heat te
 
 One `Mode=2` command passed the normal-poll preflight at 08:11:18.551 UTC and was acknowledged at **08:11:20.413 UTC**. Readback at **08:12:22.165 UTC** reported Mode=2, R03=30, Set_Temp=30, Power=0, Power_State=0, R01=8, R02=32 and O07=0, Online and fault false. No Power or target command was sent. Sanitized results were retained privately as `auto-result.json` and `auto-readback.json`. The request was consumed; no command is armed. The owner confirmed Auto/30/Off in Aqua Temp. Restoration to Heat and helper cleanup are recorded below. This is an API mode-selection observation while Off, not verification of Auto target writes or active Auto operation.
 
-
 ### Auto round-trip restoration and cleanup
 
 After the owner confirmed Auto/30/Off, one `Mode=1` restoration command passed a fresh normal-poll preflight at 08:14:25.721 UTC and was acknowledged at **08:14:28.146 UTC**. Verified readback at **08:16:32.195 UTC** showed Mode=1, R02=32, Set_Temp=32, Power=0, Power_State=0, R01=8, R03=30 and O07=0, Online and fault false. This completes the API Heat → Auto → Heat trial while Off, with owner confirmation of the Auto state and preserved mode-specific targets. No Power or target command was sent. The final Heat state is API-confirmed; it has not been separately reconfirmed in the owner's app during this round.
 
 Sanitized restoration evidence was preserved privately as `auto-heat-result.json` and `auto-heat-restored.json`. No command remained armed. The helper was disabled, the original gateway restored and hash-verified, and syntax checking passed. Only the Aqua Temp child restarted; monitoring started at **08:17:08 UTC**, its HAP listener was verified, and the helper was renamed `probe.mjs.disabled`. The installed production code and optional accessory settings remain unchanged. Cool and Auto API target writes, mode selection while On, and active cooling/Auto operation remain unverified; mode round trips alone do not complete those contracts or the seven-day validation.
-
 
 ### Auto target API trial: upward step
 
@@ -126,7 +122,6 @@ Auto selection was acknowledged at **08:21:18.499 UTC**, after preflight at 08:2
 
 The upward result/readback were preserved privately as `auto-target-up-result.json` and `auto-target-up-readback.json`. No request remains armed. The owner confirmed that Aqua Temp displayed 30.5°C. Restoration and helper cleanup are recorded below. No Power command or Set_Temp write was sent.
 
-
 ### Auto target restoration and final cleanup
 
 The owner confirmed 30.5°C in Aqua Temp while the API's Set_Temp alias remained 30. This corroborates the mode-specific R03 target used by the local model; stale Set_Temp must not override it. One `R03=30` restoration passed preflight at 08:28:32.504 UTC and was acknowledged at **08:28:34.029 UTC**. Verified readback at **08:30:38.526 UTC** showed Mode=2, R03=30, Set_Temp=30, Power=0, Power_State=0, R01=8, R02=32 and O07=0, Online and fault false. Thus the Auto target 30 → 30.5 → 30 round trip is API-verified while Off, with owner confirmation of the upward step. The restored Auto target was not separately owner-confirmed before returning to Heat.
@@ -134,7 +129,6 @@ The owner confirmed 30.5°C in Aqua Temp while the API's Set_Temp alias remained
 One `Mode=1` restoration passed preflight at 08:31:40.317 UTC and was acknowledged at **08:31:41.883 UTC**. Readback at **08:32:43.619 UTC** confirmed Heat/32°C/Off, R03=30 and R01=8 retained, Set_Temp=32, O07=0, Online and fault false. No Power command was sent. These observations establish the R03 target write at the two tested values while Off; full Auto bounds and active Auto operation remain unverified.
 
 Private evidence was retained as `auto-target-down-result.json`, `auto-target-down-readback.json`, `auto-target-heat-result.json` and `auto-target-heat-restored.json`. No request remained armed. The helper was disabled, the original gateway restored byte-for-byte with its recorded SHA-256, and syntax checking passed. Only the Aqua Temp child restarted; monitoring started at **08:33:51 UTC** and its HAP listener was verified. The helper was renamed `probe-auto-target.mjs.disabled`. The installed production code and optional accessory settings remain unchanged. Cool target API writes are the next outstanding owner-assisted command check.
-
 
 ### Cool target API trial: upward step
 
@@ -144,7 +138,6 @@ Cool selection passed preflight at 08:54:50.364 UTC and was acknowledged at **08
 
 Sanitized evidence was retained privately as `cool-target-mode-result.json`, `cool-target-before-write.json`, `cool-target-up-result.json` and `cool-target-up-readback.json`. No request remains armed. The owner confirmed that Aqua Temp displayed 8.5°C. Restoration and cleanup are recorded below. No Power or Set_Temp command was sent; this single observed target value does not establish the full Cool range or active cooling behavior.
 
-
 ### Cool target restoration and final cleanup
 
 The owner confirmed Cool's 8.5°C target in Aqua Temp while Set_Temp remained 8. One `R01=8` restoration passed preflight at 09:01:05.106 UTC and was acknowledged at **09:01:07.246 UTC**. Verified readback at **09:03:10.753 UTC** showed Mode=0, R01=8, Set_Temp=8, Power=0, Power_State=0, R02=32, R03=30 and O07=0, Online and fault false. The Cool target 8 → 8.5 → 8 round trip is API-verified while Off, with owner confirmation of the upward step. The restored 8°C target was not separately owner-confirmed before returning to Heat.
@@ -152,7 +145,6 @@ The owner confirmed Cool's 8.5°C target in Aqua Temp while Set_Temp remained 8.
 One `Mode=1` restoration passed preflight at 09:04:12.482 UTC and was acknowledged at **09:04:14.046 UTC**. Readback at **09:05:16.245 UTC** confirmed Heat/32°C/Off, R01=8 and R03=30 retained, Set_Temp=32, O07=0, Online and fault false. No Power command was sent. These observations establish R01 writes at the two tested values while Off, not the full Cool range, power-on behavior in Cool/Auto or active cooling.
 
 Private restoration evidence was retained as `cool-target-down-result.json`, `cool-target-down-readback.json`, `cool-target-heat-result.json` and `cool-target-heat-restored.json`. No request remained armed. The helper was disabled, the original gateway restored and hash-verified, and syntax checking passed. Only the Aqua Temp child restarted; monitoring started at **09:06:20 UTC**, its HAP listener was verified, and the helper was renamed `probe-cool-target.mjs.disabled`. The installed production code and optional accessory settings remain unchanged. Coordinated power On/Off behavior in Cool and Auto remains an outstanding live control check.
-
 
 ### Auto requested-power API trial
 
@@ -164,13 +156,20 @@ The helper then issued its single `Power=0` restoration, acknowledged at **09:20
 
 Private evidence was retained under `auto-power-` result/readback filenames on iHost. The helper was disabled, original gateway restored and hash-verified, and syntax checking passed. Only the Aqua Temp child restarted; monitoring started at **09:25:36 UTC**, the HAP listener was verified, and the helper was renamed `probe-auto-power.mjs.disabled`. No command remains armed. This API trial does not install production Auto controls or complete the seven-day validation.
 
-
 ### Cool requested-power API trial
 
 The owner authorized the equivalent brief Cool On → Off test at the retained 8°C target, followed by Heat/32°C/Off restoration. The helper was constrained to Cool/8/Off for On, with retained Heat=32/Auto=30 and the same profile, online, no-fault and one-shot guards used in the Auto trial. It persists one compensating Off intent before dispatching On, attempted on the next normal poll even after an uncertain On response; Off does not depend on target, mode or fault interpretation. Local checks passed Cool-only On, invalid starting values, Off-before-On arrangement, one attempt, uncertain-On compensation and sanitized results. Helper SHA-256: `4c5cc4321d9784bd6102a71066cefd1e43b028e34a3c99ab303f35bb87995abe`. It remained excluded from the package; only the Aqua Temp child was restarted, without new production code or accessory configuration changes.
 
-Cool selection passed preflight at 09:35:24.977 UTC and was acknowledged at **09:35:26.852 UTC**. Readback at **09:36:28.648 UTC** confirmed Cool/8/Off. One `Power=1` command passed preflight at **09:37:30.429 UTC** and was acknowledged at **09:37:32.259 UTC**. At **09:38:34.603 UTC**, the normal poll reported Power=1, Mode=0, R01=8, R02=32, R03=30, Set_Temp=8, O07=0, Online and fault false. **Power_State remained 0**, as in the Auto trial. Owner app confirmation of the brief Cool On → Off transition remains pending; no active cooling was established by the zero-frequency samples.
+Cool selection passed preflight at 09:35:24.977 UTC and was acknowledged at **09:35:26.852 UTC**. Readback at **09:36:28.648 UTC** confirmed Cool/8/Off. One `Power=1` command passed preflight at **09:37:30.429 UTC** and was acknowledged at **09:37:32.259 UTC**. At **09:38:34.603 UTC**, the normal poll reported Power=1, Mode=0, R01=8, R02=32, R03=30, Set_Temp=8, O07=0, Online and fault false. **Power_State remained 0**, as in the Auto trial. The owner subsequently confirmed seeing the brief Cool On → Off transition in Aqua Temp. This corroborates the requested Power field despite Power_State remaining 0; no active cooling was established by the zero-frequency samples.
 
 The automatic single `Power=0` restoration was acknowledged at **09:38:37.063 UTC**, approximately 65 seconds after On acknowledgement. Readback at **09:39:38.823 UTC** confirmed Power=0, Power_State=0, Mode=0 and target 8, with retained targets unchanged, O07=0, Online and fault false. One `Mode=1` restoration passed preflight at 09:40:40.615 UTC and was acknowledged at **09:40:42.538 UTC**. Final readback at **09:41:44.346 UTC** confirmed Heat/32°C/Off, R01=8 and R03=30 retained. No target command was sent.
 
 Private evidence was retained under the `cool-power-` result/readback filenames. No request remained armed. The helper was disabled, original gateway restored and hash-verified, and syntax checking passed. Only the Aqua Temp child restarted; monitoring started at **09:43:01 UTC**, the HAP listener was verified, and the helper was renamed `probe-cool-power.mjs.disabled`. This completes the API-observed requested-power round trip; it does not install production Cool controls or complete actual running-state and seven-day validation.
+
+## Local mode-control implementation after the component trials
+
+The current local build exposes all three target modes and binds each target write to the selected mode, using R01/R02/R03. Power-only requests preserve the observed mode. Explicit Home mode selection is supported only from Off: Mode write, fresh mode/power/target/fault verification, then Power=1 and final readback. All stages share the original eight-second deadline and device queue. Failed, ignored, aborted or unconfirmed steps are not replayed; a partial mode change may remain selected with power Off. There is no automatic rollback or atomicity guarantee, and an uncertain Power response requires checking the app before retrying.
+
+Cool 8–35°C and Auto 8–40°C profile bounds use observed metadata; half-degree increments use the tested adjacent app/API values. Applying them throughout those ranges is an explicit prerelease assumption, not a full physical validation claim. HAP intersects the device bounds with its standard 10–38°C target range. Stored Cool 8°C is retained faithfully in the domain but unavailable as a standard thermostat target; it is never clamped or written implicitly. Auto retains one R03 target; no independent Home thresholds are invented.
+
+Local real-HTTP and real-HAP tests cover mode-specific targets, same-mode power, Off-before-mode sequencing, ignored mode writes, invalid retained targets, concurrent power changes and optional-switch mode preservation. The installed Heat-only build is unchanged. Before choosing a soak build, validate the packed installation, actual Apple Home Auto presentation, optional accessories and combined-command latency. Positive compressor frequency still has unknown activity semantics; the primary Home tile may show No Response while opted-in independent capabilities remain usable.

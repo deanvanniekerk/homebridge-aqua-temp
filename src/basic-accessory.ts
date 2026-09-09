@@ -41,10 +41,12 @@ export class BasicAccessory {
         try {
           this.read();
           if (!this.#coordinator) throw this.unavailable();
-          // Heat remains the only verified On command. Gateway preflight guards external mode changes.
+          const mode = this.#coordinator.state(id)?.readings?.mode;
+          if (value && !mode?.available) throw this.unavailable();
+          // Preserve the observed mode; a later app change must fail preflight, not change it back.
           await this.#coordinator.command(id, {
             kind: 'target-state',
-            state: value ? 'heat' : 'off',
+            state: value && mode?.available ? mode.value : 'off',
           });
         } catch (error) {
           if (error instanceof CloudError && error.category === 'timeout')
