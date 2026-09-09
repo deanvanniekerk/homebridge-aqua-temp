@@ -118,7 +118,7 @@ test('coordinator shutdown closes gateway authentication independently of cancel
   assert.equal(server.calls.length, 1);
 });
 
-test('offline, unknown-profile and malformed status responses do not trigger telemetry requests', async (t) => {
+test('offline and malformed status responses do not trigger telemetry requests', async (t) => {
   const [known] = await observed('deviceList');
   const device = { id: known.deviceCode, profile: 'boost-i-hp40', sources: ['shared'] };
   let status = { status: 'OFFLINE' };
@@ -129,14 +129,9 @@ test('offline, unknown-profile and malformed status responses do not trigger tel
   t.after(() => gateway.close());
   const signal = new AbortController().signal;
   assert.equal((await gateway.read(device, signal)).connectivity, 'offline');
-  status = { status: 'ONLINE' };
-  assert.equal(
-    (await gateway.read({ ...device, profile: 'unknown' }, signal)).waterCelsius.reason,
-    'unsupported',
-  );
   status = {};
   await assert.rejects(gateway.read(device, signal), { category: 'invalid-response' });
-  assert.equal(server.calls.length, 4);
+  assert.equal(server.calls.length, 3);
   assert.ok(server.calls.every((call) => !call.path.endsWith('/getDataByCode')));
 });
 
@@ -247,6 +242,7 @@ test('supported controls use absolute R02/Power writes and require fresh Heat-mo
     await assert.rejects(
       gateway.write(device, { kind: 'target-temperature', celsius: value }, signal),
     );
+  assert.equal(server.calls.length, before, 'invalid commands fail before any network work');
   await assert.rejects(
     gateway.write(
       { ...device, profile: 'unknown' },
@@ -254,7 +250,7 @@ test('supported controls use absolute R02/Power writes and require fresh Heat-mo
       signal,
     ),
   );
-  assert.equal(server.calls.length, before, 'invalid commands fail before any network work');
+
   await assert.rejects(gateway.write(device, { kind: 'target-state', state: 'heat' }, signal));
   fault = false;
   mode = '2';

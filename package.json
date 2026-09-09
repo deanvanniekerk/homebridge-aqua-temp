@@ -1,6 +1,6 @@
 {
   "name": "@deanvniekerk/homebridge-aqua-temp-connect",
-  "version": "0.1.0-beta.1",
+  "version": "1.0.0",
   "description": "Aqua Temp heat pump controls and temperature sensors for Homebridge",
   "type": "module",
   "main": "dist/index.js",
@@ -55,7 +55,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "tag": "beta",
+    "tag": "latest",
     "registry": "https://registry.npmjs.org/"
   },
   "homepage": "https://github.com/deanvanniekerk/homebridge-aqua-temp#readme",

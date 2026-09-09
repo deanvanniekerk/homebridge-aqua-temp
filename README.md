@@ -7,13 +7,13 @@ Control compatible Aqua Temp heat pumps from Apple Home through Homebridge.
 - Optional inlet, outlet and ambient temperature sensors, each disabled by default.
 - Shared-account discovery, bounded cloud retries and automatic read recovery.
 
-**Release channel: beta.** The supported device profile is AstralPool `PASRW040-P-BP4II-C` / `BOOSTi-INV-HP-40`. Other models are not enabled automatically. Cloud access is required. A sustained hardware soak has not been recorded; see [compatibility and limitations](docs/COMPATIBILITY.md).
+**Release channel: stable.** Hardware testing has covered only AstralPool `PASRW040-P-BP4II-C` / `BOOSTi-INV-HP-40`. Other models are attempted with a console warning, using the same protocol mappings; compatibility is unverified. Cloud access is required. A sustained hardware soak has not been recorded; see [compatibility and limitations](docs/COMPATIBILITY.md).
 
 ## Install
 
 Use **Node 22.23.2 or later in the 22.x line** and **Homebridge 2.4.0 or later in the 2.x line**. Back up Homebridge before changing plugins.
 
-The package identity is `@deanvniekerk/homebridge-aqua-temp-connect`. Until the first npm publication, install a locally built tarball using the [setup guide](docs/INSTALLATION.md). Once a beta is published, install the exact package through Homebridge UI, selecting its beta version. Do not substitute another similarly named plugin.
+Install `@deanvniekerk/homebridge-aqua-temp-connect` from Homebridge UI → Plugins, then follow the [setup guide](docs/INSTALLATION.md). Check the exact package name before installing.
 
 Configure the Aqua Temp account, restart the plugin's child bridge and pair it with Apple Home. A dedicated account with the device shared to it is recommended when the phone app and plugin compete for a session. See [setup and migration](docs/INSTALLATION.md) and [configuration](docs/CONFIGURATION.md).
 

@@ -226,12 +226,7 @@ export class Thermostat {
 
   private readings() {
     const state = this.#closed ? undefined : this.#coordinator?.state(this.#id);
-    if (
-      !state ||
-      state.status !== 'healthy' ||
-      state.device.profile !== 'boost-i-hp40' ||
-      state.readings?.connectivity !== 'online'
-    )
+    if (!state || state.status !== 'healthy' || state.readings?.connectivity !== 'online')
       throw this.unavailable();
     return state.readings;
   }

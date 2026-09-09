@@ -2,15 +2,15 @@
 
 The plugin has no runtime dependencies. Homebridge supplies HAP; TypeScript and test tools are development dependencies.
 
-| Module                                                  | Responsibility                                                                              |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `cloud-client.ts`, `cloud-http.ts`, `cloud-protocol.ts` | Validated HTTP envelopes, authentication, deadlines and bounded read retry                  |
-| `device-model.ts`                                       | Device identity, supported profile, strict telemetry decoding and absolute command encoding |
-| `gateway.ts`                                            | Owned/shared discovery, profile reads and fresh command preflight                           |
-| `coordinator.ts`, `command-queue.ts`                    | Account polling, freshness, per-device serialization and readback reconciliation            |
-| `platform.ts`                                           | Homebridge lifecycle, selection and stable accessory identities                             |
-| `thermostat.ts`, `basic-accessory.ts`                   | HAP controls and independent read-only temperature sensors                                  |
-| `configuration.ts`, `diagnostics.ts`                    | Runtime/schema validation and sanitized bounded reporting                                   |
+| Module                                                  | Responsibility                                                                           |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `cloud-client.ts`, `cloud-http.ts`, `cloud-protocol.ts` | Validated HTTP envelopes, authentication, deadlines and bounded read retry               |
+| `device-model.ts`                                       | Device identity, model evidence, strict telemetry decoding and absolute command encoding |
+| `gateway.ts`                                            | Owned/shared discovery, profile reads and fresh command preflight                        |
+| `coordinator.ts`, `command-queue.ts`                    | Account polling, freshness, per-device serialization and readback reconciliation         |
+| `platform.ts`                                           | Homebridge lifecycle, selection and stable accessory identities                          |
+| `thermostat.ts`, `basic-accessory.ts`                   | HAP controls and independent read-only temperature sensors                               |
+| `configuration.ts`, `diagnostics.ts`                    | Runtime/schema validation and sanitized bounded reporting                                |
 
 ## Transport
 
@@ -22,9 +22,9 @@ Transient failures use account backoff from 5 seconds to 5 minutes with jitter; 
 
 ## Device decoding
 
-Discovery identity is `deviceCode`, with an agreeing `device_code` alias permitted. Owned/shared duplicates collapse; conflicting profile metadata becomes unsupported. Shared discovery uses 100-record pages, capped at 100 pages/10,000 records. Multi-page end behavior remains a synthetic-tested assumption; incomplete discovery does not delete devices.
+Discovery identity is `deviceCode`, with an agreeing `device_code` alias permitted. Owned/shared duplicates collapse; missing, unrecognized or conflicting model metadata is marked untested for diagnostics and a startup warning. Shared discovery uses 100-record pages, capped at 100 pages/10,000 records. Multi-page end behavior remains a synthetic-tested assumption; incomplete discovery does not delete devices.
 
-Only the exact supported model pair selects controls. T02/T03/T05 are inlet/outlet/ambient Celsius; `Power` 0/1 is requested Off/On. Mode and target mappings are in [compatibility](COMPATIBILITY.md). R01/R02/R03 are authoritative per-mode targets; the generic `Set_Temp` alias can lag and is not used as fallback. Missing, duplicate, malformed or contradictory fields stay unavailable. Acquisition time is known; a reliable device measurement timestamp is not.
+All selected devices use the same Aqua Temp protocol mappings. The model profile records testing evidence only; it does not gate telemetry, controls or accessory registration. The platform warns once per selected untested device per startup without logging raw discovery metadata. T02/T03/T05 are inlet/outlet/ambient Celsius; `Power` 0/1 is requested Off/On. Mode and target mappings are in [compatibility](COMPATIBILITY.md). R01/R02/R03 are authoritative per-mode targets; the generic `Set_Temp` alias can lag and is not used as fallback. Missing, duplicate, malformed or contradictory fields stay unavailable. Acquisition time is known; a reliable device measurement timestamp is not.
 
 O07 zero with valid mode/power and clear fault status maps to idle. The observed zero representation permits `DIGI1` or omitted legacy metadata. Positive frequency stays unknown. Empty O/S switch fields do not become zero; fault flags are generic and do not establish flow polarity or defrost. Sanitized observations live under `fixtures/protocol`; synthetic variants are tests, not additional physical evidence.
 
@@ -34,7 +34,7 @@ One account loop has a 30-second cycle budget and a configurable completion-to-n
 
 Each device admits four commands including the active one, serialized with an eight-second deadline from admission through preflight, authentication and readback. An active failure cancels queued commands. Late results cannot complete an expired setter or overwrite newer revisions; ordinary polling reconciles them. Shutdown never saves/replays commands.
 
-Targets bind the selected mode to its own field and supported grid. Explicit mode changes require Off, confirm the new mode, still-Off power, valid retained target and clear fault before requesting On. There is no vendor atomic/conditional write. One matching readback confirms reported settings; mismatch remains an error even if it converges later. Off can remain writable with unknown mode/target on a supported profile.
+Targets bind the selected mode to its own field and supported grid. Explicit mode changes require Off, confirm the new mode, still-Off power, valid retained target and clear fault before requesting On. There is no vendor atomic/conditional write. One matching readback confirms reported settings; mismatch remains an error even if it converges later. Off can remain writable with unknown mode/target when requested power is available.
 
 ## Homebridge presentation
 

@@ -21,7 +21,7 @@ Use Homebridge UI → Plugins → Aqua Temp → Plugin Config. The platform alia
 | --------------------------------- | --------- | ----------------------------------------------------------------------- |
 | `name`                            | Aqua Temp | Accessory display name; 1–64 characters                                 |
 | `username`, `password`            | Required  | Aqua Temp account credentials, stored in local Homebridge configuration |
-| `deviceIds`                       | `[]`      | Include all supported discovered devices, or only the listed exact IDs  |
+| `deviceIds`                       | `[]`      | Include all discovered devices, or only the listed exact IDs            |
 | `pollInterval`                    | `60`      | Seconds between completed polling cycles; whole number 30–300           |
 | `debug`                           | `false`   | Emit sanitized diagnostic reports                                       |
 | `includeInletTemperatureSensor`   | `false`   | Separate inlet water temperature sensor (T02)                           |

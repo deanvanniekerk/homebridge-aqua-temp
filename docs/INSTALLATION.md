@@ -9,9 +9,9 @@
 
 ## Install the package
 
-After npm publication, search Homebridge UI → Plugins for the exact name `@deanvniekerk/homebridge-aqua-temp-connect`. Install the selected beta version, then open Plugin Config. Registry search/discovery cannot be confirmed before publication.
+Search Homebridge UI → Plugins for `@deanvniekerk/homebridge-aqua-temp-connect`, install the latest stable version, then open Plugin Config. To test a prerelease, explicitly select its beta version.
 
-Before publication, or to test a contribution, build a tarball from the intended commit on a development machine:
+To test a contribution, build a tarball from the intended commit on a development machine:
 
 ```sh
 npm ci

@@ -39,7 +39,7 @@ test('observed Heat readings enable bounded controls without guessing compressor
   assert.equal(state.measuredAtMs, null);
 });
 
-test('invalid and conflicting discovery records cannot silently select a writable profile', () => {
+test('invalid identities are rejected and conflicting model metadata stays untested', () => {
   const result = discoverDevices(
     [
       ...owned,
@@ -162,7 +162,7 @@ test('unverified mode/activity never become fabricated Heat or Idle', () => {
   }
 });
 
-test('offline or unsupported devices do not expose fresh-looking readings or capabilities', () => {
+test('offline devices do not expose fresh-looking readings; untested models decode available capabilities', () => {
   const [device] = discoverDevices(owned, []).devices;
   const offline = normalizeReadings(device, { status: 'OFFLINE', isFault: false }, null, 1000);
   assert.deepEqual(offline.waterCelsius, { available: false, reason: 'offline' });
@@ -173,8 +173,8 @@ test('offline or unsupported devices do not expose fresh-looking readings or cap
     telemetry,
     1000,
   );
-  assert.deepEqual(unknown.waterCelsius, { available: false, reason: 'unsupported' });
-  assert.deepEqual(unknown.control, { available: false, reason: 'unsupported' });
+  assert.deepEqual(unknown.waterCelsius, { available: true, value: 20.5 });
+  assert.equal(unknown.control.available, true);
   for (const time of [NaN, Infinity, -1])
     assert.throws(() => normalizeReadings(device, { status: 'ONLINE' }, telemetry, time), {
       category: 'invalid-response',

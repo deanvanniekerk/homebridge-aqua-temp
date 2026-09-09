@@ -66,7 +66,7 @@ test('distribution contains runtime and user documentation and gates publication
   const installed = join(workspace, 'package');
   const metadata = JSON.parse(await readFile(join(installed, 'package.json'), 'utf8'));
   assert.notEqual(metadata.private, true);
-  assert.equal(metadata.version, '0.1.0-beta.1');
+  assert.equal(metadata.version, '1.0.0');
   assert.deepEqual(metadata.dependencies ?? {}, {});
   assert.equal(metadata.name, '@deanvniekerk/homebridge-aqua-temp-connect');
   const module = await run(
@@ -87,17 +87,31 @@ test('distribution contains runtime and user documentation and gates publication
     cwd: installed,
     env: { ...process.env, AQUA_TEMP_RELEASE_APPROVED: metadata.version },
   });
-  await writeFile(
-    join(installed, 'package.json'),
-    JSON.stringify({ ...metadata, version: '0.1.0' }),
-  );
-  await assert.rejects(
-    run('npm', ['run', 'prepublishOnly'], {
+  // Exercise both channels and reject mismatched tags, invalid versions and stale approval.
+  for (const [version, tag, approval, allowed] of [
+    ['1.0.0', 'latest', '1.0.0', true],
+    ['1.0.1-beta.1', 'beta', '1.0.1-beta.1', true],
+    ['1.0.0', 'beta', '1.0.0', false],
+    ['1.0.1-beta.1', 'latest', '1.0.1-beta.1', false],
+    ['1.0.0', 'latest', '0.1.0-beta.1', false],
+    ['1.0.0-rc.1', 'latest', '1.0.0-rc.1', false],
+    ['01.0.0', 'latest', '01.0.0', false],
+  ]) {
+    await writeFile(
+      join(installed, 'package.json'),
+      JSON.stringify({
+        ...metadata,
+        version,
+        publishConfig: { ...metadata.publishConfig, tag },
+      }),
+    );
+    const check = run(process.execPath, ['scripts/check-release.mjs'], {
       cwd: installed,
-      env: { ...process.env, AQUA_TEMP_RELEASE_APPROVED: '0.1.0' },
-    }),
-    /Only beta releases are enabled/,
-  );
+      env: { ...process.env, AQUA_TEMP_RELEASE_APPROVED: approval },
+    });
+    if (allowed) await check;
+    else await assert.rejects(check);
+  }
   await writeFile(join(installed, 'package.json'), JSON.stringify(metadata));
 });
 
@@ -281,7 +295,7 @@ test(
       .filter((line) => line.includes('Diagnostic report: '));
     assert.equal(reportLines.length, 1);
     const report = JSON.parse(reportLines[0].split('Diagnostic report: ')[1]);
-    assert.equal(report.runtime.plugin, '0.1.0-beta.1');
+    assert.equal(report.runtime.plugin, '1.0.0');
     assert.equal(report.devices[0].reference, 'device-1');
     assert.equal(report.devices[0].controls, 'available');
     assert.doesNotMatch(JSON.stringify(report), /synthetic|@|token|deviceCode|deviceId/);

@@ -25,7 +25,7 @@ This runs the committed snapshot in a disposable, pinned ARMv7 container under e
 
 Keep Homebridge presentation separate from transport, device decoding and account scheduling. See [architecture](docs/ARCHITECTURE.md). Preserve bounded retries, cancellation, fresh command validation and no write replay. Acknowledgment and reported settings do not establish physical actuation.
 
-Add a regression at the boundary that owns the behavior. Prefer the real client/HAP code against local fakes over mocks that only assert their own calls. Keep fixtures small, sanitized and labeled as observed or synthetic. New device profiles need independent evidence for identity, mode values, target bounds and readback; never broaden support based only on similar model names.
+Add a regression at the boundary that owns the behavior. Prefer the real client/HAP code against local fakes over mocks that only assert their own calls. Keep fixtures small, sanitized and labeled as observed or synthetic. Untested models are attempted using the existing protocol mappings and logged as unverified. Changes to mode values, target bounds or readback need independent evidence; similar model names alone do not establish compatibility.
 
 Keep runtime dependencies minimal. The current plugin has none. Do not copy another integration's implementation, tests or assets. Contributions are licensed under the repository's MIT license.
 
