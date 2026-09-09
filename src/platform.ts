@@ -11,7 +11,7 @@ import { AccountCoordinator, type AccountSnapshot } from './coordinator.js';
 import { AquaTempGateway } from './gateway.js';
 import { Thermostat } from './thermostat.js';
 import { BasicAccessory, type BasicRole } from './basic-accessory.js';
-import { PLATFORM_NAME, PLUGIN_NAME, pluginVersion } from './settings.js';
+import { ACCESSORY_NAMESPACE, PLATFORM_NAME, PLUGIN_NAME, pluginVersion } from './settings.js';
 import { Diagnostics } from './diagnostics.js';
 import { isRecord } from './cloud-error.js';
 
@@ -81,7 +81,9 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
     const units = isRecord(context) && context.displayUnits === 1 ? 1 : 0;
     // Retired development accessories must not be restored as thermostats.
     if (isRecord(context) && (context.role === 'power' || context.role === 'water')) {
-      const legacyUuid = this.#api.hap.uuid.generate(`${PLUGIN_NAME}:device:${id}:${context.role}`);
+      const legacyUuid = this.#api.hap.uuid.generate(
+        `${ACCESSORY_NAMESPACE}:device:${id}:${context.role}`,
+      );
       if (id && accessory.UUID === legacyUuid) this.#retired.add(accessory);
       return;
     }
@@ -107,7 +109,7 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
 
   private uuid(id: string, role: Role = 'thermostat'): string {
     const suffix = role === 'thermostat' ? '' : `:${role}`;
-    return this.#api.hap.uuid.generate(`${PLUGIN_NAME}:device:${id}${suffix}`);
+    return this.#api.hap.uuid.generate(`${ACCESSORY_NAMESPACE}:device:${id}${suffix}`);
   }
 
   private selected(id: string): boolean {

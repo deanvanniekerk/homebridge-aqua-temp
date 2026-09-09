@@ -1,47 +1,43 @@
-# Configuration implementation status
+# Configuration
 
-`parseConfig` and the Homebridge UI schema now define username/password, optional device IDs, a 30–300 second whole-number poll interval (default 60), and debug (default false). An empty ID list means all discovered identities; duplicates, blanks and malformed types are rejected. Unknown host fields remain ignored so Homebridge child-bridge metadata can coexist with plugin configuration.
+Use Homebridge UI → Plugins → Aqua Temp → Plugin Config. The platform alias is `AquaTemp`.
 
-Ajv 8.20.0 is an exact development-only dependency used to compare real JSON Schema validation against the runtime parser. The plugin keeps zero runtime dependencies. Both validators count Unicode characters consistently; neither coerces numeric strings, accepts null defaults, or includes supplied values in error messages.
+```json
+{
+  "platform": "AquaTemp",
+  "name": "Aqua Temp",
+  "username": "your-account@example.com",
+  "password": "your-password",
+  "pollInterval": 60,
+  "deviceIds": [],
+  "debug": false,
+  "includeInletTemperatureSensor": false,
+  "includeOutletTemperatureSensor": false,
+  "includeAmbientTemperatureSensor": false
+}
+```
 
-The platform validates configuration during construction. A rejected configuration emits an actionable, value-free message and does not install the launch callback; Homebridge remains running. A clean tarball installation test checks valid startup, restart, rejected configuration without credential leakage, and recovery after fixing the configuration.
-
-The development platform connects to Aqua Temp for discovery, readings and the limited mode controls described in DEVICE_MODEL.md. The platform observes coordinator snapshots and provides the diagnostic behavior below, including account failures before any device is discovered.
+| Option                            | Default   | Meaning                                                                 |
+| --------------------------------- | --------- | ----------------------------------------------------------------------- |
+| `name`                            | Aqua Temp | Accessory display name; 1–64 characters                                 |
+| `username`, `password`            | Required  | Aqua Temp account credentials, stored in local Homebridge configuration |
+| `deviceIds`                       | `[]`      | Include all supported discovered devices, or only the listed exact IDs  |
+| `pollInterval`                    | `60`      | Seconds between completed polling cycles; whole number 30–300           |
+| `debug`                           | `false`   | Emit sanitized diagnostic reports                                       |
+| `includeInletTemperatureSensor`   | `false`   | Separate inlet water temperature sensor (T02)                           |
+| `includeOutletTemperatureSensor`  | `false`   | Separate outlet water temperature sensor (T03)                          |
+| `includeAmbientTemperatureSensor` | `false`   | Separate ambient air temperature sensor (T05)                           |
 
 ## Optional accessories
 
-The only optional accessories are three independent, read-only temperature sensors, all **false by default**:
+The three read-only sensors are independently configurable and share the existing polling session. They do not add cloud requests or depend on compressor, mode or target support. Missing data affects only the corresponding sensor. Stale/offline data stays unavailable.
 
-| Configuration option              | Accessory           | Reading            |
-| --------------------------------- | ------------------- | ------------------ |
-| `includeInletTemperatureSensor`   | Inlet Temperature   | Inlet water (T02)  |
-| `includeOutletTemperatureSensor`  | Outlet Temperature  | Outlet water (T03) |
-| `includeAmbientTemperatureSensor` | Ambient Temperature | Ambient air (T05)  |
+Restart the child bridge after changing options. Disabling a sensor removes that accessory; re-enabling uses the same generated identity, but its Home assignments and automations may have been lost. Temporary missing telemetry does not remove accessories.
 
-Enable any combination in plugin settings and restart the child bridge. The default layout contains only the thermostat. Sensors use separate stable identities and the same polling session, without additional cloud requests. A missing or unsupported sensor reading makes only that sensor unavailable; temperature sensors do not depend on target, mode, power or compressor activity. Stale/offline data remains unavailable. Local real-HAP tests cover their behavior; Apple Home presentation is left to owner testing.
+The retired development options `includePowerSwitch` and `includeWaterTemperatureSensor` are ignored. Their cached accessories are removed after launch with valid configuration. Use `includeInletTemperatureSensor` to replace the old Water sensor. There is no optional Power switch.
 
-The earlier development options `includePowerSwitch` and `includeWaterTemperatureSensor` are retired and ignored. Their old cached accessories are removed when starting with valid configuration. Enable the explicit inlet option if you previously used the Water sensor. No optional Power switch is exposed.
+## Diagnostics
 
-Disabling an option and restarting removes that optional accessory. Re-enabling uses the same generated identity, but removal can lose its Apple Home room assignments or automations. Temporary missing telemetry never removes accessories. Credentials and telemetry are not stored in accessory context.
+Normal logs report failures and recovery with bounded repetition. Enable `debug`, restart the child bridge and find `Diagnostic report:` in its log. Reports are emitted at most once every five minutes and include runtime versions, anonymous device references, capability availability, sample age and retry timing. Disable debug when finished.
 
-## Diagnostic contract
-
-`Diagnostics.observe` accepts a normalized account snapshot and emits a status/failure transition. Repeated identical failures are suppressed for five minutes. Healthy polls remain quiet in normal mode; recovery emits one message. Invalid credentials, sharing permissions and session contention include fixed troubleshooting hints. Normal and debug fault messages include sample age and retry timing. Account-level errors and recoveries have their own bounded transition record, so a failed initial login is actionable even with zero discovered devices.
-
-`Diagnostics.report` produces a JSON-serializable snapshot with the installed package version, Node and Homebridge versions, account discovery/failure status, anonymous device references, profile/control availability, status, last-success age, failure category and retry delay. It selects allowed fields and enum values instead of recursively redacting raw input. Vendor messages, payloads, nested causes, identifiers, account names and URLs are never serialized. Unknown version formats are reported as unknown. Ages describe local sample acquisition, not a verified vendor measurement timestamp.
-
-References are sequential and stable for one diagnostics instance; they are not derived from device identifiers and are not persisted. Tracking and reports are capped at 1,000 devices per instance. A report includes an omitted-device count when it cannot represent every supplied entry. Extra identities do not displace existing references or generate unbounded log state. This is a diagnostic resource limit, not a device discovery or control limit.
-
-## Getting a report
-
-Enable **Debug diagnostics** in the local Homebridge UI plugin settings, save, and restart the platform (or its child bridge). Search the Homebridge log for **Diagnostic report:**. The JSON after that prefix is the sanitized report to copy into a support issue. A report is emitted after the first discovery result or account failure, then at most once every five minutes while state updates continue. It is a point-in-time snapshot; its ages are measured when emitted. Disable debug when finished.
-
-Normal status/failure and recovery messages remain available with debug off. Enabling debug does not reveal additional account fields or raw errors, and neither mode stores credentials in accessory context. No separate HTTP diagnostics endpoint or credentials-bearing report file is created. Homebridge manages its own log retention; these report lines follow that same lifecycle. Anonymous references restart from `device-1` when the platform restarts.
-
-The UI schema was inspected for required account fields, password formatting, explicit defaults/limits and understandable report instructions. An example generated by the actual diagnostic serializer is in [diagnostic-report.json](../fixtures/diagnostics/diagnostic-report.json). Its input is synthetic domain state, not a captured account. The packed-process test also parses a report from the running plugin and rejects account/device identifiers and secrets in it. This establishes the supplied schema and report contract; it does not claim physical iHost UI or Apple Home validation.
-
-## Local provisioning
-
-Enter credentials through your local Homebridge UI or its persistent local configuration. Keep that configuration outside the source repository; it contains the password in a form the plugin must be able to read. Never place credentials in accessory context, screenshots, issue bodies, command-line arguments or published fixtures. Development probes use the already ignored `.secrets/` mechanism and ordinary tests use synthetic accounts only.
-
-Prefer a separately registered Aqua Temp account with the device shared to it. This was observed to support reads on the owner's heater and avoids deliberately reusing the mobile account; it does not guarantee freedom from vendor session contention. Keep the previous integration disabled before running another integration against the same account/device.
+Copy only the sanitized report when requesting support. Raw cloud errors, tokens, passwords, account IDs and device IDs are excluded. References are local to one process, not persistent identifiers. Invalid configuration is rejected without echoing supplied values. Correct credentials or denied account access and restart to resume authentication.

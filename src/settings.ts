@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { isRecord } from './cloud-error.js';
 
-export const PLUGIN_NAME = '@deanvanniekerk/homebridge-aqua-temp';
+export const PLUGIN_NAME = '@deanvniekerk/homebridge-aqua-temp-connect';
 export const PLATFORM_NAME = 'AquaTemp';
+// Freeze the original identity namespace across package renames.
+export const ACCESSORY_NAMESPACE = '@deanvanniekerk/homebridge-aqua-temp';
 
 /** Read the installed package metadata; diagnostics validates the public version format. */
 export function pluginVersion(): string {

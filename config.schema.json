@@ -2,7 +2,7 @@
   "pluginAlias": "AquaTemp",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "Development build: device integration remains incomplete. Use a dedicated Aqua Temp shared account when available. Credentials stay in your local Homebridge configuration; never include them in issue reports.",
+  "headerDisplay": "Control compatible Aqua Temp heat pumps in Apple Home. Use a dedicated shared account if needed. Credentials remain in your Homebridge configuration. See the README for supported models and setup.",
   "schema": {
     "type": "object",
     "required": ["username", "password"],

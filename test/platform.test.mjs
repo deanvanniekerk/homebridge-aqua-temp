@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { HomebridgeAPI } from '../node_modules/homebridge/dist/api.js';
 import { AquaTempPlatform } from '../dist/platform.js';
-import { PLUGIN_NAME, PLATFORM_NAME } from '../dist/settings.js';
+import { ACCESSORY_NAMESPACE, PLUGIN_NAME, PLATFORM_NAME } from '../dist/settings.js';
 import { redirectCloud } from './redirect-cloud.mjs';
 import { credentials, login, reply, serverFor, success } from './fake-cloud.mjs';
 
@@ -19,7 +19,8 @@ async function waitUntil(condition) {
     await delay(10);
   }
 }
-const uuid = (api, id = device.deviceCode) => api.hap.uuid.generate(`${PLUGIN_NAME}:device:${id}`);
+const uuid = (api, id = device.deviceCode) =>
+  api.hap.uuid.generate(`${ACCESSORY_NAMESPACE}:device:${id}`);
 async function host(t, extraConfig = {}, cached = [], scenario = 'online') {
   const server = await serverFor(t, (call, response) => {
     const path = call.path.split('/').at(-1);
@@ -153,6 +154,11 @@ test('platform registers one namespaced identity, restores it before fresh reads
   );
   assert.equal(new Set(cold.registered.map((item) => item.UUID)).size, 4);
   assert.equal(accessory.UUID, uuid(cold.api));
+  assert.equal(
+    accessory.UUID,
+    cold.api.hap.uuid.generate('@deanvanniekerk/homebridge-aqua-temp:device:synthetic-device'),
+    'package rename preserves the original device UUID',
+  );
   assert.equal(accessory._associatedPlugin, PLUGIN_NAME);
   assert.equal(await current(cold.api, accessory).handleGetRequest(), 20.5);
   const serialized = cold.api.platformAccessory.serialize(accessory);
@@ -224,7 +230,7 @@ test('real login denial before discovery reaches sanitized normal/debug diagnost
         failure: 'invalid-credentials',
       });
       assert.deepEqual(report.devices, []);
-      assert.equal(report.runtime.plugin, '0.0.0-development.0');
+      assert.equal(report.runtime.plugin, '0.1.0-beta.1');
       assert.equal(report.runtime.homebridge, '2.4.0');
     }
     h.stop();
@@ -310,10 +316,10 @@ test('retired Power and Water accessories are removed without creating extra the
   const cached = ['power', 'water'].map((role) => {
     const accessory = new api.platformAccessory(
       'Old accessory',
-      api.hap.uuid.generate(`${PLUGIN_NAME}:device:${device.deviceCode}:${role}`),
+      api.hap.uuid.generate(`${ACCESSORY_NAMESPACE}:device:${device.deviceCode}:${role}`),
     );
     accessory.context = { deviceId: device.deviceCode, role };
-    api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+    api.registerPlatformAccessories(ACCESSORY_NAMESPACE, PLATFORM_NAME, [accessory]);
     return api.platformAccessory.serialize(accessory);
   });
   const h = await host(

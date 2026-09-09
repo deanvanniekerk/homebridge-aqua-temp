@@ -7,7 +7,7 @@
     "method": "Owner-authorized read-only POST through the original cloud client; TLS validation enabled; bounded 15-second acquisition.",
     "scope": "Single online supported BOOSTi-INV-HP-40, following owner app 2.2.2 status-parameter screenshots.",
     "redaction": "Only requested codes, numeric-or-empty values and allowlisted metadata; no account/device identifiers or raw responses.",
-    "limitations": "Later cloud sample, not simultaneous with screenshots. Labels are separately transcribed in docs/APP_PARAMETERS.md. Empty values do not mean zero; null means omitted by projection. No writes and no active/defrost/fault-state experiment."
+    "limitations": "Later cloud sample, not simultaneous with screenshots. Original label transcription: https://github.com/deanvanniekerk/homebridge-aqua-temp/blob/2fb8cd6/docs/APP_PARAMETERS.md. Empty values do not mean zero; null means omitted by projection. No writes and no active/defrost/fault-state experiment."
   },
   "codes": [
     "Power",

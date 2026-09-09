@@ -29,8 +29,9 @@ after(async () => {
   if (workspace) await rm(workspace, { recursive: true, force: true });
 });
 
-test('distribution contains only reviewed runtime files and refuses publication', async () => {
+test('distribution contains runtime and user documentation and gates publication approval', async () => {
   assert.deepEqual(pack.files.map((file) => file.path).sort(), [
+    'CONTRIBUTING.md',
     'LICENSE',
     'README.md',
     'config.schema.json',
@@ -51,14 +52,23 @@ test('distribution contains only reviewed runtime files and refuses publication'
     'dist/scheduler.js',
     'dist/settings.js',
     'dist/thermostat.js',
+    'docs/ARCHITECTURE.md',
+    'docs/COMPATIBILITY.md',
+    'docs/CONFIGURATION.md',
+    'docs/INSTALLATION.md',
+    'docs/RELEASING.md',
+    'docs/SPEC.md',
+    'docs/VALIDATION.md',
     'package.json',
+    'scripts/check-release.mjs',
   ]);
   await run('tar', ['-xzf', archive, '-C', workspace]);
   const installed = join(workspace, 'package');
   const metadata = JSON.parse(await readFile(join(installed, 'package.json'), 'utf8'));
-  assert.equal(metadata.private, true);
+  assert.notEqual(metadata.private, true);
+  assert.equal(metadata.version, '0.1.0-beta.1');
   assert.deepEqual(metadata.dependencies ?? {}, {});
-  assert.equal(metadata.name, '@deanvanniekerk/homebridge-aqua-temp');
+  assert.equal(metadata.name, '@deanvniekerk/homebridge-aqua-temp-connect');
   const module = await run(
     process.execPath,
     [
@@ -70,13 +80,29 @@ test('distribution contains only reviewed runtime files and refuses publication'
   );
   assert.equal(module.stderr, '');
   await assert.rejects(run('npm', ['run', 'prepublishOnly'], { cwd: installed }), (error) => {
-    assert.match(error.stderr, /Publishing is disabled until release preparation/);
+    assert.match(error.stderr, /Publication requires a separate release decision/);
     return true;
   });
+  await run('npm', ['run', 'prepublishOnly'], {
+    cwd: installed,
+    env: { ...process.env, AQUA_TEMP_RELEASE_APPROVED: metadata.version },
+  });
+  await writeFile(
+    join(installed, 'package.json'),
+    JSON.stringify({ ...metadata, version: '0.1.0' }),
+  );
+  await assert.rejects(
+    run('npm', ['run', 'prepublishOnly'], {
+      cwd: installed,
+      env: { ...process.env, AQUA_TEMP_RELEASE_APPROVED: '0.1.0' },
+    }),
+    /Only beta releases are enabled/,
+  );
+  await writeFile(join(installed, 'package.json'), JSON.stringify(metadata));
 });
 
 test(
-  'packed plugin loads in a clean production Homebridge host and survives restart',
+  'packed plugin loads in a clean production Homebridge host survives restart and uninstalls cleanly',
   { timeout: 180_000 },
   async (t) => {
     let targetValue = '32',
@@ -255,7 +281,7 @@ test(
       .filter((line) => line.includes('Diagnostic report: '));
     assert.equal(reportLines.length, 1);
     const report = JSON.parse(reportLines[0].split('Diagnostic report: ')[1]);
-    assert.equal(report.runtime.plugin, '0.0.0-development.0');
+    assert.equal(report.runtime.plugin, '0.1.0-beta.1');
     assert.equal(report.devices[0].reference, 'device-1');
     assert.equal(report.devices[0].controls, 'available');
     assert.doesNotMatch(JSON.stringify(report), /synthetic|@|token|deviceCode|deviceId/);
@@ -300,5 +326,20 @@ test(
         ].includes(call.path.split('/').at(-1)),
       ),
     );
+    await run(
+      'npm',
+      [
+        'uninstall',
+        '--ignore-scripts',
+        '--no-audit',
+        '--no-fund',
+        '@deanvniekerk/homebridge-aqua-temp-connect',
+      ],
+      { cwd: consumer },
+    );
+    await assert.rejects(
+      access(join(consumer, 'node_modules/@deanvniekerk/homebridge-aqua-temp-connect')),
+    );
+    await access(join(consumer, 'node_modules/homebridge/package.json'));
   },
 );
