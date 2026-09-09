@@ -37,3 +37,19 @@ At 2026-09-09 07:05:04.645 UTC, the temporary observer’s first installed-clien
 Additional observations were R01=0.0 with metadata range 8–35°C, R03=30.0 with metadata range 8–40°C, R08=8.0, R09=35.0, R10=15.0 and R11=40.0. These are candidate parameters, not verified Cool/Auto targets or writable limits. In particular, R01’s value falls outside its metadata range in this Heat sample, so it cannot simply become a validated Cool target by assumption. Owner-assisted app mode comparisons are the next required evidence.
 
 The observation import is temporarily installed in the development gateway on iHost and the baseline was read through the existing session. One intentional child restart loaded it. Original gateway SHA-256 is `714830ae2d283df98c00c916bf801bb8fcd0c1a114e0a47e701c6faef0517551`; the private backup and observer are under the host’s `issue-10-modes` directory. A removable `enabled` flag and twenty-minute process lifetime bound observation. No production Cool/Auto support or fallback behavior has been enabled yet. The temporary transfer server was stopped after the verified transfer.
+
+### App-selected Cool, power retained Off
+
+The owner selected Cool in Aqua Temp without changing the target and reported that the device remained Off with **Target Temp 0°C**. At 2026-09-09 07:10:14.081 UTC, the existing-client capture reported Online, fault false, Power=0, Power_State=0, Mode=0, Set_Temp=0.0, R01=0.0, R02=32.0 and R03=30.0; water T02=20.0 and compressor frequency O07=0 were unchanged. This establishes the observed Cool selection as Mode=0 and confirms that a displayed zero is a real app/API observation, not a missing-data placeholder. The mode change did not turn the unit on in this trial.
+
+R01 continued to report metadata range 8–35°C despite containing 0°C. Neither writable acceptance of zero nor the full Cool target contract is established. R01 is a candidate Cool target because it agrees with the app and Set_Temp, but a separate controlled target change is still needed to identify its behavior independently. Readable reported values and writable constraints must be modeled separately; this observation must not lead to silent clamping to 8°C or to substituting the Heat target of 32°C. No API command or target change was sent during this comparison.
+
+### App-selected Auto, power retained Off
+
+The owner selected Auto without changing the target and reported that the device remained Off with target 30°C. At 2026-09-09 07:13:19.415 UTC, the existing-client capture reported Online, fault false, Power=0, Power_State=0, Mode=2, Set_Temp=30.0, R03=30.0, R02=32.0, R01=0.0 and O07=0. R03 metadata remained 8–40°C. This establishes the observed Auto selection as Mode=2; the app mode change did not turn the unit on in this trial.
+
+Together with the Heat and Cool comparisons, the observed selection mapping for this device is Cool=0, Heat=1 and Auto=2. Set_Temp followed the app-displayed target across all three selections. R03 is a candidate Auto target, pending a separate controlled target change; its writable limits, increments and API write behavior are not yet verified. The app shows one target, but HomeKit Auto presentation and threshold semantics still require evaluation. No API command or target change was sent during this comparison.
+
+### Restoration to Heat
+
+The owner selected Heat and confirmed the app target automatically returned to 32°C without adjustment. At 2026-09-09 07:18:28.862 UTC, the capture confirmed Online, fault false, Power=0, Mode=1, Set_Temp=32.0, R02=32.0 and O07=0. R01 remained 0.0 and R03 remained 30.0. This completes the app-driven Heat → Cool → Auto → Heat comparison with power Off throughout the captured states and the original Heat target restored. The next manual check will distinguish the candidate Auto target from coincidentally matching values by changing it one app increment while Off.
