@@ -1,8 +1,7 @@
 {
-  "name": "@deanvanniekerk/homebridge-aqua-temp",
-  "version": "0.0.0-development.0",
-  "description": "Independent Aqua Temp Homebridge plugin with limited Heat controls and bounded cloud recovery",
-  "private": true,
+  "name": "@deanvniekerk/homebridge-aqua-temp-connect",
+  "version": "0.1.0-beta.1",
+  "description": "Aqua Temp heat pump controls and temperature sensors for Homebridge",
   "type": "module",
   "main": "dist/index.js",
   "exports": "./dist/index.js",
@@ -21,7 +20,16 @@
   },
   "files": [
     "dist/*.js",
-    "config.schema.json"
+    "config.schema.json",
+    "docs/INSTALLATION.md",
+    "docs/CONFIGURATION.md",
+    "docs/COMPATIBILITY.md",
+    "docs/ARCHITECTURE.md",
+    "docs/VALIDATION.md",
+    "docs/RELEASING.md",
+    "docs/SPEC.md",
+    "CONTRIBUTING.md",
+    "scripts/check-release.mjs"
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
@@ -32,7 +40,7 @@
     "test": "npm run build && node --test --test-concurrency=1 test/*.test.mjs",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
     "prepack": "npm run build",
-    "prepublishOnly": "node -e \"throw new Error('Publishing is disabled until release preparation (#11).')\""
+    "prepublishOnly": "node scripts/check-release.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -44,5 +52,14 @@
     "prettier": "3.9.6",
     "typescript": "6.0.3",
     "typescript-eslint": "8.70.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "beta",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "homepage": "https://github.com/deanvanniekerk/homebridge-aqua-temp#readme",
+  "bugs": {
+    "url": "https://github.com/deanvanniekerk/homebridge-aqua-temp/issues"
   }
 }

@@ -30,7 +30,7 @@ export async function runHomebridge(
       '--strict-plugin-resolution',
       '--no-qrcode',
       '--plugin-path',
-      join(directory, 'node_modules/@deanvanniekerk/homebridge-aqua-temp'),
+      join(directory, 'node_modules/@deanvniekerk/homebridge-aqua-temp-connect'),
       '--user-storage-path',
       join(directory, options.storage ?? 'storage'),
     ],

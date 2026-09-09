@@ -1,5 +1,6 @@
 import { isRecord } from './cloud-error.js';
 
+export type OperatingMode = 'heat' | 'cool' | 'auto';
 export type DeviceProfile = 'boost-i-hp40' | 'unknown';
 export interface Device {
   readonly id: string;
@@ -8,8 +9,12 @@ export interface Device {
 }
 
 export type DeviceCommand =
-  | { readonly kind: 'target-temperature'; readonly celsius: number }
-  | { readonly kind: 'target-state'; readonly state: 'off' | 'heat' };
+  | { readonly kind: 'target-temperature'; readonly celsius: number; readonly mode?: OperatingMode }
+  | {
+      readonly kind: 'target-state';
+      readonly state: 'off' | OperatingMode;
+      readonly allowModeChange?: boolean;
+    };
 
 export type UnavailableReason =
   'missing' | 'invalid' | 'conflict' | 'offline' | 'unsupported' | 'unverified';
@@ -25,7 +30,7 @@ export interface DeviceReadings {
   readonly ambientCelsius: Reading<number>;
   readonly reportedTargetCelsius: Reading<number>;
   readonly power: Reading<'on' | 'off'>;
-  readonly mode: Reading<'heat'>;
+  readonly mode: Reading<OperatingMode>;
   readonly fault: Reading<boolean>;
   readonly activity: Reading<'heating' | 'idle' | 'defrost' | 'flow-fault'>;
   readonly control: Reading<{
@@ -38,7 +43,9 @@ export interface DeviceReadings {
 export const telemetrySelectors = Object.freeze([
   'Power',
   'Mode',
+  'R01',
   'R02',
+  'R03',
   'T02',
   'T03',
   'T05',
@@ -47,9 +54,25 @@ export const telemetrySelectors = Object.freeze([
 const available = <T>(value: T): Reading<T> => Object.freeze({ available: true, value });
 const unavailable = (reason: UnavailableReason): Reading<never> =>
   Object.freeze({ available: false, reason });
-const heatControl = Object.freeze({ minimumCelsius: 15, maximumCelsius: 40, stepCelsius: 0.5 });
+const modeProfiles = new Map<
+  OperatingMode,
+  {
+    wire: string;
+    target: string;
+    minimumCelsius: number;
+    maximumCelsius: number;
+    stepCelsius: number;
+  }
+>([
+  ['heat', { wire: '1', target: 'R02', minimumCelsius: 15, maximumCelsius: 40, stepCelsius: 0.5 }],
+  ['cool', { wire: '0', target: 'R01', minimumCelsius: 8, maximumCelsius: 35, stepCelsius: 0.5 }],
+  ['auto', { wire: '2', target: 'R03', minimumCelsius: 8, maximumCelsius: 40, stepCelsius: 0.5 }],
+]);
+export function isOperatingMode(value: unknown): value is OperatingMode {
+  return typeof value === 'string' && modeProfiles.has(value as OperatingMode);
+}
 
-/** Absolute wire values for the deliberately limited, owner-observed Heat profile. */
+/** Absolute writes for the observed profile; targets are bound to a selected mode. */
 export function encodeCommand(
   device: Device,
   command: DeviceCommand,
@@ -57,21 +80,33 @@ export function encodeCommand(
   if (device.profile !== 'boost-i-hp40') throw new DeviceError('unsupported');
   if (command.kind === 'target-state') {
     const state: unknown = command.state;
-    if (state === 'off' || state === 'heat')
+    if (state === 'off' || isOperatingMode(state))
       return { protocolCode: 'Power', value: state === 'off' ? '0' : '1' };
   }
   if (command.kind === 'target-temperature') {
     const value = command.celsius;
+    const control = modeProfiles.get(command.mode ?? 'heat');
     if (
+      control &&
       typeof value === 'number' &&
       Number.isFinite(value) &&
-      value >= heatControl.minimumCelsius &&
-      value <= heatControl.maximumCelsius &&
-      Number.isInteger(value / heatControl.stepCelsius)
+      value >= control.minimumCelsius &&
+      value <= control.maximumCelsius &&
+      Number.isInteger(value / control.stepCelsius)
     )
-      return { protocolCode: 'R02', value: String(value) };
+      return { protocolCode: control.target, value: String(value) };
   }
   throw new DeviceError('unsupported');
+}
+
+/** Mode selection is only used after the gateway has established that power is Off. */
+export function encodeMode(
+  device: Device,
+  mode: OperatingMode,
+): { protocolCode: string; value: string } {
+  const profile = modeProfiles.get(mode);
+  if (device.profile !== 'boost-i-hp40' || !profile) throw new DeviceError('unsupported');
+  return { protocolCode: 'Mode', value: profile.wire };
 }
 
 export class DeviceError extends Error {
@@ -149,14 +184,19 @@ function parameters(input: unknown): Map<string, unknown> {
   if (!Array.isArray(input) || input.length > 1024) throw new DeviceError('invalid-response');
   const result = new Map<string, unknown>();
   for (const value of input) {
-    if (!isRecord(value) || !identifier(value.code)) throw new DeviceError('invalid-response');
+    // Unidentifiable optional rows cannot invalidate unrelated, explicitly requested fields.
+    if (!isRecord(value) || !identifier(value.code)) continue;
     // Duplicate selectors cannot establish which value is current, even if equal.
     result.set(value.code, result.has(value.code) ? null : value);
   }
   return result;
 }
 
-function temperature(values: Map<string, unknown>, code: string): Reading<number> {
+function temperature(
+  values: Map<string, unknown>,
+  code: string,
+  enforceRange = true,
+): Reading<number> {
   if (!values.has(code)) return unavailable('missing');
   const field = values.get(code);
   if (!isRecord(field) || field.dataType !== 'TEMP') return unavailable('invalid');
@@ -165,8 +205,9 @@ function temperature(values: Map<string, unknown>, code: string): Reading<number
   const lower = decimal(field.rangeStart);
   const upper = decimal(field.rangeEnd);
   if (
-    (field.rangeStart !== undefined && field.rangeStart !== '') ||
-    (field.rangeEnd !== undefined && field.rangeEnd !== '')
+    enforceRange &&
+    ((field.rangeStart !== undefined && field.rangeStart !== '') ||
+      (field.rangeEnd !== undefined && field.rangeEnd !== ''))
   ) {
     if (
       lower === undefined ||
@@ -229,14 +270,24 @@ export function normalizeReadings(
         ? available('on')
         : unavailable('unsupported');
   const rawMode = enumeration(values, 'Mode');
-  const mode: Reading<'heat'> = !rawMode.available
+  const selected = rawMode.available
+    ? [...modeProfiles].find(([, profile]) => profile.wire === rawMode.value)?.[0]
+    : undefined;
+  const mode: Reading<OperatingMode> = !rawMode.available
     ? rawMode
-    : rawMode.value === '1'
-      ? available('heat')
+    : selected
+      ? available(selected)
       : unavailable('unsupported');
-  // Owner app changes track R02 in Heat mode while Set_Temp can retain an old target.
-  const reportedTargetCelsius = mode.available
-    ? temperature(values, 'R02')
+  // The app retains one target per mode; Set_Temp can lag behind those fields.
+  // Report out-of-range stored targets faithfully; write constraints are separate.
+  const profile = mode.available ? modeProfiles.get(mode.value) : undefined;
+  const control = profile && {
+    minimumCelsius: profile.minimumCelsius,
+    maximumCelsius: profile.maximumCelsius,
+    stepCelsius: profile.stepCelsius,
+  };
+  const reportedTargetCelsius = profile
+    ? temperature(values, profile.target, false)
     : unavailable('unsupported');
   const rawFault: unknown = status.isFault ?? status.is_fault;
   const fault =
@@ -249,7 +300,9 @@ export function normalizeReadings(
   // Zero corroborates the observed inactive baseline. Positive frequency cannot
   // distinguish useful heating from defrost/protection, so remains unavailable.
   const stopped =
-    isRecord(frequency) && frequency.dataType == null && decimal(frequency.value) === 0;
+    isRecord(frequency) &&
+    (frequency.dataType == null || frequency.dataType === 'DIGI1') &&
+    decimal(frequency.value) === 0;
   return Object.freeze({
     ...empty,
     waterCelsius: temperature(values, 'T02'),
@@ -264,8 +317,14 @@ export function normalizeReadings(
         ? available('idle' as const)
         : unavailable('unverified'),
     control:
-      mode.available && power.available && reportedTargetCelsius.available
-        ? available(heatControl)
+      mode.available &&
+      control &&
+      power.available &&
+      reportedTargetCelsius.available &&
+      reportedTargetCelsius.value >= control.minimumCelsius &&
+      reportedTargetCelsius.value <= control.maximumCelsius &&
+      Number.isInteger(reportedTargetCelsius.value / control.stepCelsius)
+        ? available(control)
         : unavailable('unsupported'),
   });
 }

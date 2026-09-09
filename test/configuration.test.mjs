@@ -13,6 +13,12 @@ test('runtime and UI schema agree on credentials, identity selection, interval a
   const validate = new Ajv({ strict: false, formats: { password: true } }).compile(schema);
   const cases = [
     [valid, true],
+    [
+      { ...valid, includeOutletTemperatureSensor: true, includeInletTemperatureSensor: false },
+      true,
+    ],
+    [{ ...valid, includeOutletTemperatureSensor: 'true' }, false],
+    [{ ...valid, includeInletTemperatureSensor: 1 }, false],
     [{ ...valid, pollInterval: 30, debug: true, deviceIds: ['one', 'two'] }, true],
     [{ ...valid, pollInterval: 300 }, true],
     [{ ...valid, pollInterval: 29 }, false],
@@ -30,10 +36,15 @@ test('runtime and UI schema agree on credentials, identity selection, interval a
     [{ ...valid, password: ' ' }, false],
     [{ username: valid.username }, false],
     [null, false],
-    ...['name', 'deviceIds', 'debug', 'pollInterval'].map((key) => [
-      { ...valid, [key]: null },
-      false,
-    ]),
+    ...[
+      'name',
+      'deviceIds',
+      'debug',
+      'pollInterval',
+      'includeOutletTemperatureSensor',
+      'includeInletTemperatureSensor',
+      'includeAmbientTemperatureSensor',
+    ].map((key) => [{ ...valid, [key]: null }, false]),
     [{ ...valid, name: '🌊'.repeat(64) }, true],
     [{ ...valid, name: '🌊'.repeat(65) }, false],
   ];
@@ -45,6 +56,25 @@ test('runtime and UI schema agree on credentials, identity selection, interval a
   const config = parseConfig(valid);
   assert.equal(config.pollInterval, 60);
   assert.equal(config.debug, false);
+  assert.equal(config.includeOutletTemperatureSensor, false);
+  assert.equal(config.includeInletTemperatureSensor, false);
+  assert.equal(config.includeAmbientTemperatureSensor, false);
+  assert.equal(validate({ ...valid, includeAmbientTemperatureSensor: true }), true);
+  assert.equal(
+    parseConfig({ ...valid, includeAmbientTemperatureSensor: true })
+      .includeAmbientTemperatureSensor,
+    true,
+  );
+  assert.deepEqual(
+    Object.keys(schema.properties)
+      .filter((k) => k.startsWith('include'))
+      .sort(),
+    [
+      'includeAmbientTemperatureSensor',
+      'includeInletTemperatureSensor',
+      'includeOutletTemperatureSensor',
+    ],
+  );
   assert.deepEqual(config.deviceIds, []);
   assert.equal(config.name, 'Aqua Temp');
 });

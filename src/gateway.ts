@@ -6,6 +6,7 @@ import {
   DeviceError,
   discoverDevices,
   encodeCommand,
+  encodeMode,
   normalizeReadings,
   telemetrySelectors,
   type Device,
@@ -107,20 +108,25 @@ export class AquaTempGateway implements DeviceGateway {
 
   validateCommand(device: Device, command: DeviceCommand, readings: DeviceReadings): void {
     encodeCommand(device, command);
-    if (
-      readings.connectivity !== 'online' ||
-      !readings.control.available ||
-      !readings.mode.available ||
-      !readings.power.available
-    )
+    if (readings.connectivity !== 'online' || !readings.power.available)
       throw new DeviceError('unsupported');
-    // A known fault must not prevent a supported Off request, but On/target changes require
-    // an explicitly clear fault status. No command changes the vendor operating mode.
-    if (
-      !(command.kind === 'target-state' && command.state === 'off') &&
-      (!readings.fault.available || readings.fault.value)
-    )
-      throw new DeviceError('unverified');
+    // Power-off is independent of selected mode, target and activity. It never changes mode.
+    if (command.kind === 'target-state' && command.state === 'off') return;
+    if (!readings.mode.available) throw new DeviceError('unsupported');
+    if (!readings.fault.available || readings.fault.value) throw new DeviceError('unverified');
+    const requestedMode =
+      command.kind === 'target-temperature' ? (command.mode ?? 'heat') : command.state;
+    if (readings.mode.value !== requestedMode) {
+      if (
+        command.kind !== 'target-state' ||
+        !command.allowModeChange ||
+        readings.power.value !== 'off'
+      )
+        throw new DeviceError('unsupported');
+      // The requested mode's retained target must be checked after its selection.
+      return;
+    }
+    if (!readings.control.available) throw new DeviceError('unsupported');
   }
 
   async write(device: Device, command: DeviceCommand, signal: AbortSignal): Promise<void> {
@@ -130,6 +136,23 @@ export class AquaTempGateway implements DeviceGateway {
     // Recheck external app changes within the caller's original eight-second budget.
     const readings = await this.read(target, signal);
     this.validateCommand(target, intent, readings);
+    if (
+      intent.kind === 'target-state' &&
+      intent.state !== 'off' &&
+      readings.mode.available &&
+      readings.mode.value !== intent.state
+    ) {
+      signal.throwIfAborted();
+      await this.#client.write([{ deviceCode: target.id, ...encodeMode(target, intent.state) }], {
+        signal,
+      });
+      const selected = await this.read(target, signal);
+      // Acknowledgement alone is insufficient. Never turn on after an unconfirmed mode
+      // change, invalid retained target, or a concurrent external power change.
+      if (!selected.power.available || selected.power.value !== 'off')
+        throw new DeviceError('unverified');
+      this.validateCommand(target, { ...intent, allowModeChange: false }, selected);
+    }
     signal.throwIfAborted();
     await this.#client.write([{ deviceCode: target.id, ...encoded }], { signal });
   }

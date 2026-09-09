@@ -1,62 +1,33 @@
-# Local validation report
+# Validation
 
-Recorded 2026-09-08 for the limited Heat integration in issues #5, #7 and #9. These results establish local software behavior within the documented support boundary, not physical actuation or production stability. No real account, device-setting command, production Homebridge storage or hardware was used by the automated tests.
+## Automated coverage
 
-## Reproduce
+`npm run check` runs formatting, lint, strict typechecking and behavioral tests on local fake services. CI covers Node 22.23.2 and latest 22 on Linux x64, plus a pinned Linux ARMv7 image under emulation. macOS arm64 is used for local development. See [contributing](../CONTRIBUTING.md).
 
-Use Node 22.23.2 and npm 10.9.8, then run:
+| Boundary                                                                 | Tests                                                                                 |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| HTTP/TLS, envelopes, authentication, expiry, contention and retry bounds | `test/cloud.test.mjs`                                                                 |
+| Discovery, sensor validation, modes and command mapping                  | `test/device-model.test.mjs`, `test/gateway.test.mjs`, `test/mode-controls.test.mjs`  |
+| Freshness, queues, cancellation and late results                         | `test/coordinator.test.mjs`, `test/commands.test.mjs`                                 |
+| HAP controls, optional sensors and cached identities                     | `test/thermostat.test.mjs`, `test/basic-accessory.test.mjs`, `test/platform.test.mjs` |
+| Configuration and redaction                                              | `test/configuration.test.mjs`, `test/diagnostics.test.mjs`                            |
+| Artifact contents, production-only installation, restart and removal     | `test/package.test.mjs`                                                               |
+| Seven virtual days with repeated failures and commands                   | `test/recovery-soak.test.mjs`, `test/control-recovery.test.mjs`                       |
 
-```sh
-npm ci --no-audit --no-fund
-npm run check
-bash scripts/check-armv7.sh
-```
+Virtual time establishes scheduling/recovery behavior, not elapsed hardware uptime or absence of memory leaks. The packed-host test runs real Homebridge/HAP on loopback against a fake cloud; it does not prove mDNS pairing or physical actuation. Homebridge's `/accessories` metadata can contain fallback values after a getter error; inspect per-characteristic statuses for reliable read results.
 
-The ARM command requires a clean committed checkout. It runs the same checks in a pinned Linux ARMv7 container using emulation; see [development instructions](DEVELOPMENT.md). The native development host is macOS arm64. Homebridge is pinned to 2.4.0 (its supplied HAP is 2.2.2). The plugin has no runtime dependencies. Installed consumer dependencies are resolved from the pinned Homebridge package as described in DEVELOPMENT.md.
+The release-preparation checkpoint passed all 95 tests locally on Node 22.23.2/macOS arm64, including renamed-package install/removal and publication guards. Both workflows passed Actionlint 1.7.12, and local documentation links resolved. The release PR checks provide the Linux matrix results.
 
-## Checked results
+## Actual-host evidence
 
-The earlier read-only checkpoint passed 75 tests, with minimum/latest Node 22 on Linux x64 and pinned emulated Linux ARMv7 CI in merged PRs #15–#19. This delivery extends the actual gateway, packed Homebridge process and virtual soak to supported commands. Final verification for this delivery is recorded in its PR checks; commands above reproduce the suite. Tests never load the real account or private evidence.
+Owner-assisted tests on 2026-09-08/09 used the supported BOOSTi-INV-HP-40, Aqua Temp 2.2.2 and an iHost Homebridge Docker installation. They established install/pairing, readings, Heat fractional target readback, app-originated changes, power round trips, individual Cool/Auto mode/target commands and an actual Home Auto single-target round trip. An isolated child-process DNS failure demonstrated stale presentation and same-process recovery; a physical router/WAN outage was not tested.
 
-At completion snapshot `afe5a69`, `npm run check` passed formatting, lint, typechecking and all 78 tests on native macOS arm64 / Node 22.23.2. The test phase took about 44 seconds. The standalone model and adapter snapshots each passed their 77-test suites. Both review passes are clear after correcting an intermediate package assertion and adding the explicit target-reconciliation regression. Each completion PR also runs minimum/latest Node 22 x64 and emulated ARMv7 CI; inspect its checks for the final merge result.
+The last installed code checkpoint before release preparation was `c9fda81`, covering optional inlet/outlet/ambient sensors and the unknown-activity display fallback. All 95 local tests passed at that checkpoint. The owner took over end-to-end testing and reported that things looked good. Issue [#10](https://github.com/deanvanniekerk/homebridge-aqua-temp/issues/10) is closed; it contains no detailed new soak report. That closure does not establish seven days of unattended stability.
 
-## Evidence by boundary
+## Remaining release checks
 
-| Requirement                                                                                   | Evidence                                                                                                                                             | Scope                                                                                                                                                                                                                      |
-| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Authentication concurrency, expiry, contention and denied access                              | [Cloud transport tests](../test/cloud.test.mjs)                                                                                                      | Real HTTP with shared login, one renewal/read replay, cooldown and account/device permission distinctions.                                                                                                                 |
-| Malformed JSON/envelopes, missing tokens, oversized/incomplete bodies, HTTP-200 vendor errors | [Cloud transport tests](../test/cloud.test.mjs)                                                                                                      | Real HTTP parsing, bounded bodies, safe closed error categories.                                                                                                                                                           |
-| DNS, TLS and connection failures; timeouts, redirects, 429/5xx and Retry-After                | [Cloud transport tests](../test/cloud.test.mjs)                                                                                                      | DNS failure injected at the resolver boundary; real HTTPS/HTTP request code remains active. TLS negotiation/connection refusal tested on local servers. No real vendor DNS or network outage is induced.                   |
-| Partial/shared/duplicate discovery and normalized telemetry                                   | [Gateway tests](../test/gateway.test.mjs), [device-model tests](../test/device-model.test.mjs)                                                       | Actual client/gateway requests, sanitized observations and labeled synthetic cases.                                                                                                                                        |
-| Poll scheduling, staleness, isolation, cancellation and bounded subscriptions                 | [Coordinator tests](../test/coordinator.test.mjs)                                                                                                    | Actual coordinator with deterministic scheduler; separate real-gateway shutdown test closes outstanding login work.                                                                                                        |
-| Queue deadlines, ambiguous results, no replay and late-result reconciliation                  | [Command tests](../test/commands.test.mjs), cloud transport tests                                                                                    | Focused queue/transport tests isolate timing and retries; the soak additionally runs accepted and lost-acknowledgment writes through the actual profile, gateway and HAP. No test proves physical actuation.               |
-| HAP values, constraints, errors and setter deadlines                                          | [Thermostat tests](../test/thermostat.test.mjs)                                                                                                      | Actual HAP handlers check constraint intersections and deadlines; the packed host verifies the supported real gateway and command/readback path.                                                                           |
-| Config rejection, initial login denial, normal/debug redaction and reports                    | [Configuration tests](../test/configuration.test.mjs), [diagnostic tests](../test/diagnostics.test.mjs), [platform tests](../test/platform.test.mjs) | Runtime/schema agreement, bounded messages, actual transport/platform failures and explicit field projection.                                                                                                              |
-| Tarball install, cached identity, cold/warm restart and child bridges                         | [Package tests](../test/package.test.mjs)                                                                                                            | Clean production-only Homebridge install, actual HAP HTTP reads, confirmed target/Off/Heat writes and accepted-but-unconfirmed errors. Test-host-only routing supplies a fake cloud; it is excluded from the distribution. |
-| Seven-day repeated fault/recovery schedule                                                    | [Read/write recovery simulation](../test/recovery-soak.test.mjs)                                                                                     | Actual HTTP client, gateway, coordinator, diagnostics and HAP; two synthetic devices and virtual scheduling.                                                                                                               |
+- Complete the npm account/trusted-publisher setup and verify registry/Homebridge UI discovery after first publication.
+- Record a seven-day physical run before stable reliability claims: exact build/runtime, UTC start/end, restart counts, resource observations, incidents and interventions.
+- Broader models, full Cool/Auto ranges, active-state classification and backup restore need their own evidence.
 
-## Seven virtual days
-
-The simulation runs at the supported 300-second poll interval for 604,800,000 milliseconds of virtual time, including the initial poll: 2,017 polls. It repeatedly alternates 503 and 429 outages with five-minute Retry-After, malformed shared discovery, empty/duplicate lists, per-device 403, offline state, malformed JSON/telemetry and external temperature changes. The session expires at each virtual day boundary. It checks staleness after three intervals, recovery without restarting, per-device isolation and retained identities.
-
-The extended native simulation observed 11,704 HTTP requests, eight logins (initial plus seven renewals), 84 explicit target-setting requests, 5,870 notifications and 3,629 sanitized log/report lines. Forty-two writes succeed with R02 readback; forty-two apply at the fake device but lose the response connection, producing a HAP error and later read-only reconciliation. Set_Temp is not used to confirm the target. Request counts prove that recovery never repeats the lost writes. A separate [target recovery regression](../test/control-recovery.test.mjs) keeps the applied 31.5°C state through backoff, asserts that the actual HAP target adopts it, then changes the fake app target to 30.5°C and asserts a later poll adopts that value with the write count still one. The seven-day soak replaces app values at cycle boundaries; it does not alone prove the intermediate applied-target observation.
-
-Maximum simultaneous server sockets was two; active timer resources peaked at five above baseline. Assertions bound request/notification/log counts, retained scheduler tasks, update subscriptions and shutdown cleanup. Counters are retained instead of all requests/logs. Real HTTP settles at each virtual scheduler event before time advances again; this prevents the test harness from falsely timing out OS I/O. Virtual duration remains exactly seven days. Native wall-clock execution was about fourteen seconds in the focused run; this is not an endurance claim.
-
-The production-only packed host performs five lifecycles (normal cold/warm/recovery and child-bridge cold/warm). Each cycle reads water/target, writes 32.5°C, turns On and Off, restores 32°C, then injects an acknowledged-but-ignored target request. The latter returns a HAP communication error and preserves reported 32°C. It asserts exactly five explicit writes per lifecycle and no startup, restart or shutdown writes. The observed HAP target range is 15–38°C / 0.5°C, and identity persists across same-bridge restarts.
-
-The initial ARMv7 control runs exposed a startup race in the package test: HAP snapshots characteristic metadata before awaiting getters, so discovery can contain fresh temperature values alongside earlier read-only metadata. The harness now waits for writable target permissions before exercising controls, then independently asserts the exact bounds and step. No timeout, retry budget or production behavior was changed to address this failure.
-
-## Clock-correction regression
-
-A real HTTP regression test moves `Date.now()` back one day while leaving the process monotonic clock intact. Before the fix, the newly acquired sample was immediately classified as stale. The gateway and diagnostics now use the same default monotonic epoch clock as the coordinator. The test verifies fresh state and a one-minute diagnostic age under the clock correction. This fixes mixed-clock freshness accounting; it does not infer vendor measurement timestamps.
-
-## Limits and remaining gates
-
-The [supported profile and limitations](DEVICE_MODEL.md#supported-control-subset-and-limitations) are explicit. No unverified Mode writes are enabled. Fractional API writes follow the observed app grid and numeric wire contract but still lack a physical command test. Active heating versus defrost cannot be distinguished; unknown activity returns a HAP error. The local control path is implemented and exercised, with this intentionally limited activity representation.
-
-Virtual scheduling is not seven days of real-world uptime or a memory-leak proof. The simulation keeps two identities stable; it does not establish unlimited account/device scaling. Real-account session behavior, write authority and physical actuation remain separate from synthetic test outcomes.
-
-Homebridge's child-bridge SIGTERM fallback may produce host exit 143; this is distinguished from ordinary host exit 0 and plugin crashes. HAP's `/accessories` serializer can substitute default values after getter failure, while `/characteristics` returns communication errors. See [adapter limitations](HOMEBRIDGE_ADAPTER.md). Neither accepted host fallback nor local HAP responses prove actual Apple Home presentation or physical iHost shutdown behavior.
-
-The CI workflow declares minimum/latest Node 22 on Linux x64 and pinned emulated ARMv7. Inspect the delivery PR checks for their exact commit and results; local results alone do not establish CI success. Docker Desktop execution does not prove mDNS discovery, Apple Home pairing, physical iHost compatibility, or the hardware soak in issue #10.
+Keep only current results here. Raw private observations remain outside the repository; superseded investigations are retained in Git history. Release decisions and package identity are documented in [releasing](RELEASING.md).

@@ -1,9 +1,5 @@
-# Device-model evidence
+# Protocol fixtures
 
-The initial three allowlisted observations were created during the owner's authorized issue #2 investigation. They are copied from this project's evidence commit `cf07e8e`, not from another integration. Each JSON file retains its own date, provenance, sanitization and limitations. Account/device/product IDs are placeholders; no raw captures or credentials are included.
+These are allowlisted, sanitized observations from this project's owner-authorized Aqua Temp investigation, not another integration. Each JSON file records provenance and limitations. Account/device identifiers are placeholders; raw captures and credentials are excluded. Tests that alter fixtures create synthetic cases. Fixtures are not shipped to npm.
 
-`deviceList.json` and `shared-device-list.json` establish the matching device code across owned and shared records, despite different account-scoped IDs. `telemetry-core.json`, together with the owner's app comparison documented in the [preserved protocol investigation](https://github.com/deanvanniekerk/homebridge-aqua-temp/blob/cf07e8e/docs/PROTOCOL.md), supports the inlet temperature and requested Off/Heat state. It does not establish activity, target step or authoritative command completion.
-
-Tests that modify these observations are explicitly synthetic fault cases. Fixtures are excluded from the npm package.
-
-`telemetry-status-parameters.json` is a later original read-only observation following owner-supplied app 2.2.2 status pages. It projects numeric-or-empty values and allowlisted metadata; null indicates metadata/value omitted by that projection, not a raw vendor null. [APP_PARAMETERS.md](../../docs/APP_PARAMETERS.md) records the app labels and comparison limitations, including app-visible O/S states that this endpoint returns empty.
+Owned/shared lists establish the common device code despite different account-scoped IDs. Telemetry supports the mappings in [architecture](../../docs/ARCHITECTURE.md). In `telemetry-status-parameters.json`, null metadata can mean omission by the projection rather than a vendor null. App-visible O/S switch values were empty in the API: do not coerce them to zero or infer flow polarity. Compressor frequency is not a percentage, and positive frequency does not prove heating rather than defrost.

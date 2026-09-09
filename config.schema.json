@@ -2,7 +2,7 @@
   "pluginAlias": "AquaTemp",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "Development build: device integration remains incomplete. Use a dedicated Aqua Temp shared account when available. Credentials stay in your local Homebridge configuration; never include them in issue reports.",
+  "headerDisplay": "Control compatible Aqua Temp heat pumps in Apple Home. Use a dedicated shared account if needed. Credentials remain in your Homebridge configuration. See the README for supported models and setup.",
   "schema": {
     "type": "object",
     "required": ["username", "password"],
@@ -52,7 +52,25 @@
       },
       "debug": {
         "title": "Debug diagnostics",
-        "description": "Write a sanitized JSON diagnostic report to the Homebridge log, at most once every five minutes. After enabling, restart the platform and search the log for “Diagnostic report”.",
+        "description": "Write a sanitized JSON diagnostic report to the Homebridge log, at most once every five minutes. After enabling, restart the platform and search the log for \u201cDiagnostic report\u201d.",
+        "type": "boolean",
+        "default": false
+      },
+      "includeInletTemperatureSensor": {
+        "title": "Include inlet temperature sensor",
+        "description": "Add a separate read-only inlet temperature accessory. Restart to apply.",
+        "type": "boolean",
+        "default": false
+      },
+      "includeOutletTemperatureSensor": {
+        "title": "Include outlet temperature sensor",
+        "description": "Add a separate read-only outlet temperature accessory. Restart to apply.",
+        "type": "boolean",
+        "default": false
+      },
+      "includeAmbientTemperatureSensor": {
+        "title": "Include ambient temperature sensor",
+        "description": "Add a separate read-only ambient temperature accessory. Restart to apply.",
         "type": "boolean",
         "default": false
       }

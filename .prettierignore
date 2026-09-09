@@ -4,7 +4,3 @@ coverage/
 .local/
 .secrets/
 package-lock.json
-# Preserve the already-reviewed source/evidence documents.
-docs/SPEC.md
-docs/COMPATIBILITY.md
-docs/ROADMAP.md

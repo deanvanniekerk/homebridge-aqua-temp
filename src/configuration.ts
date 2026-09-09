@@ -7,10 +7,22 @@ export interface AquaTempConfig {
   readonly deviceIds: readonly string[];
   readonly pollInterval: number;
   readonly debug: boolean;
+  readonly includeOutletTemperatureSensor: boolean;
+  readonly includeInletTemperatureSensor: boolean;
+  readonly includeAmbientTemperatureSensor: boolean;
 }
 
 type Field =
-  'configuration' | 'name' | 'username' | 'password' | 'deviceIds' | 'pollInterval' | 'debug';
+  | 'configuration'
+  | 'name'
+  | 'username'
+  | 'password'
+  | 'deviceIds'
+  | 'pollInterval'
+  | 'debug'
+  | 'includeOutletTemperatureSensor'
+  | 'includeInletTemperatureSensor'
+  | 'includeAmbientTemperatureSensor';
 const messages: Record<Field, string> = {
   configuration: 'Configuration must be an object.',
   name: 'Name must contain 1–64 characters without leading/trailing whitespace or line breaks.',
@@ -19,6 +31,9 @@ const messages: Record<Field, string> = {
   deviceIds: 'Device IDs must be a list of up to 100 unique, nonblank IDs (256 characters each).',
   pollInterval: 'Poll interval must be a whole number from 30 to 300 seconds.',
   debug: 'Debug must be true or false.',
+  includeOutletTemperatureSensor: 'Include outlet temperature sensor must be true or false.',
+  includeInletTemperatureSensor: 'Include inlet temperature sensor must be true or false.',
+  includeAmbientTemperatureSensor: 'Include ambient temperature sensor must be true or false.',
 };
 export class ConfigurationError extends Error {
   constructor(readonly field: Field) {
@@ -65,7 +80,26 @@ export function parseConfig(input: unknown): AquaTempConfig {
     throw new ConfigurationError('pollInterval');
   const debug: unknown = input.debug === undefined ? false : input.debug;
   if (typeof debug !== 'boolean') throw new ConfigurationError('debug');
+  const includeOutletTemperatureSensor: unknown =
+    input.includeOutletTemperatureSensor === undefined
+      ? false
+      : input.includeOutletTemperatureSensor;
+  const includeInletTemperatureSensor: unknown =
+    input.includeInletTemperatureSensor === undefined ? false : input.includeInletTemperatureSensor;
+  if (typeof includeOutletTemperatureSensor !== 'boolean')
+    throw new ConfigurationError('includeOutletTemperatureSensor');
+  if (typeof includeInletTemperatureSensor !== 'boolean')
+    throw new ConfigurationError('includeInletTemperatureSensor');
+  const includeAmbientTemperatureSensor: unknown =
+    input.includeAmbientTemperatureSensor === undefined
+      ? false
+      : input.includeAmbientTemperatureSensor;
+  if (typeof includeAmbientTemperatureSensor !== 'boolean')
+    throw new ConfigurationError('includeAmbientTemperatureSensor');
   return Object.freeze({
+    includeAmbientTemperatureSensor,
+    includeOutletTemperatureSensor,
+    includeInletTemperatureSensor,
     name,
     username: input.username,
     password: input.password,

@@ -1,23 +1,43 @@
 # Aqua Temp for Homebridge
 
-An independent Homebridge plugin project for Aqua Temp connected heat pumps, starting with an AstralPool BOOST-i-INV-HP-40 used at home.
+Control compatible Aqua Temp heat pumps from Apple Home through Homebridge.
 
-**Status: limited development/prerelease plugin. Reads and confirmed target/On/Off commands are implemented for the observed BOOSTi-INV-HP-40 profile. No npm release or actual iHost/Apple Home certification is available.**
+- Off, Heat, Cool and Auto, with a separate retained target for each mode.
+- Inlet water temperature on the thermostat.
+- Optional inlet, outlet and ambient temperature sensors, each disabled by default.
+- Shared-account discovery, bounded cloud retries and automatic read recovery.
 
-The plugin exposes inlet water temperature and a 15–38°C target in 0.5°C steps through a HomeKit Thermostat. Select Heat mode in Aqua Temp first; HomeKit Off/Heat then controls power without changing the vendor mode. The device's 38.5–40°C targets remain available only through Aqua Temp because they exceed the supported HAP target range.
+**Release channel: beta.** The supported device profile is AstralPool `PASRW040-P-BP4II-C` / `BOOSTi-INV-HP-40`. Other models are not enabled automatically. Cloud access is required. A sustained hardware soak has not been recorded; see [compatibility and limitations](docs/COMPATIBILITY.md).
 
-Writes require fresh state and matching readback. A timeout or unconfirmed result can mean the setting applied later: check the app before trying again. Startup and recovery never replay commands. Fractional API writes use the app-observed grid but have not yet been physically tested. Idle can be reported from zero compressor frequency; active heating, defrost and flow/protection states cannot yet be distinguished. Unknown activity returns a communication error, whose effect on the Apple Home tile still needs actual-host testing. See the complete [support boundary](docs/DEVICE_MODEL.md#supported-control-subset-and-limitations).
+## Install
 
-Homebridge 2.4.0+ (2.x) and Node 22.23.2+ (22.x) are required. The previously inspected iHost container was older and needs a deliberate upgrade before installation; this repository does not change that container automatically. For local development, build an installable tarball with `npm ci` then `npm pack`, and install that tarball into a supported Homebridge host. Use the [local configuration instructions](docs/CONFIGURATION.md#local-provisioning) and a separate shared Aqua Temp account. Keep the old plugin disabled while evaluating this one. Actual iHost pairing/endurance and npm distribution remain #10 and #11.
+Use **Node 22.23.2 or later in the 22.x line** and **Homebridge 2.4.0 or later in the 2.x line**. Back up Homebridge before changing plugins.
 
-- [Product and engineering specification](docs/SPEC.md)
-- [Observed deployment and runtime compatibility](docs/COMPATIBILITY.md)
-- [Development commands, tests and packaging](docs/DEVELOPMENT.md)
-- [Implementation roadmap](docs/ROADMAP.md)
-- [MIT license](LICENSE)
+The package identity is `@deanvniekerk/homebridge-aqua-temp-connect`. Until the first npm publication, install a locally built tarball using the [setup guide](docs/INSTALLATION.md). Once a beta is published, install the exact package through Homebridge UI, selecting its beta version. Do not substitute another similarly named plugin.
 
-This is an original implementation project. The older Aqua Temp plugin's public documentation and issue reports inform interoperability research and test scenarios; its source, tests, assets, and history are not imported. This project is not affiliated with Aqua Temp, AstralPool, Fluidra, Apple, or SONOFF.
+Configure the Aqua Temp account, restart the plugin's child bridge and pair it with Apple Home. A dedicated account with the device shared to it is recommended when the phone app and plugin compete for a session. See [setup and migration](docs/INSTALLATION.md) and [configuration](docs/CONFIGURATION.md).
 
-Cloud connectivity is required. Support is limited to the exact observed model and the documented Heat contract. No public npm package or compatibility certification is claimed.
+## Using the thermostat
 
-Please exclude credentials, tokens, device identifiers, raw device photographs, and unredacted logs from public issues. Diagnostics use local credentials and produce sanitized output.
+Switch Off before selecting a different mode. Selecting Heat, Cool or Auto requests On in that mode; it does not change the retained target. Auto uses a single target.
+
+| Mode | Home target range | Step  |
+| ---- | ----------------- | ----- |
+| Heat | 15–38°C           | 0.5°C |
+| Cool | 10–35°C           | 0.5°C |
+| Auto | 10–38°C           | 0.5°C |
+
+Targets outside Home's range can still be set in Aqua Temp. The plugin never silently clamps them; an unrepresentable target can make the thermostat unavailable until changed in Aqua Temp. After a timeout, check the app before retrying: the command may have applied late.
+
+Home's heating/cooling indicator estimates demand when compressor activity is unknown. It is not proof that the compressor is running; delays, defrost and protection cannot currently be distinguished. Unknown compressor activity alone does not disable controls. Stale/offline core readings remain unavailable.
+
+## Support and contributing
+
+Report the plugin/runtime versions, device model, expected behavior and a sanitized diagnostic report in a [GitHub issue](https://github.com/deanvanniekerk/homebridge-aqua-temp/issues). Never include account credentials, tokens, pairing codes or raw device identifiers.
+
+- [Contributing](CONTRIBUTING.md)
+- [Architecture and protocol boundaries](docs/ARCHITECTURE.md)
+- [Validation status](docs/VALIDATION.md)
+- [Release process](docs/RELEASING.md)
+
+An original, independent implementation under the [MIT license](LICENSE). Not affiliated with Aqua Temp, AstralPool, Fluidra, Apple or SONOFF.
