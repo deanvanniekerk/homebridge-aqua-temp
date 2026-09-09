@@ -93,7 +93,7 @@ export class AquaTempGateway implements DeviceGateway {
     const status = await this.#client.read({ kind: 'status', deviceCode: device.id }, { signal });
     signal.throwIfAborted();
     const statusOnly = normalizeReadings(device, status, [], this.#now());
-    if (statusOnly.connectivity === 'offline' || device.profile === 'unknown') return statusOnly;
+    if (statusOnly.connectivity === 'offline') return statusOnly;
     const telemetry = await this.#client.read(
       {
         kind: 'telemetry',

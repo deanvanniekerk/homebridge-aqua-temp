@@ -1,6 +1,7 @@
 import { isRecord } from './cloud-error.js';
 
 export type OperatingMode = 'heat' | 'cool' | 'auto';
+/** Model evidence only; telemetry and command availability do not depend on this label. */
 export type DeviceProfile = 'boost-i-hp40' | 'unknown';
 export interface Device {
   readonly id: string;
@@ -72,12 +73,11 @@ export function isOperatingMode(value: unknown): value is OperatingMode {
   return typeof value === 'string' && modeProfiles.has(value as OperatingMode);
 }
 
-/** Absolute writes for the observed profile; targets are bound to a selected mode. */
+/** Absolute writes using the Aqua Temp protocol mappings; targets are bound to a selected mode. */
 export function encodeCommand(
-  device: Device,
+  _device: Device,
   command: DeviceCommand,
 ): { protocolCode: string; value: string } {
-  if (device.profile !== 'boost-i-hp40') throw new DeviceError('unsupported');
   if (command.kind === 'target-state') {
     const state: unknown = command.state;
     if (state === 'off' || isOperatingMode(state))
@@ -101,11 +101,11 @@ export function encodeCommand(
 
 /** Mode selection is only used after the gateway has established that power is Off. */
 export function encodeMode(
-  device: Device,
+  _device: Device,
   mode: OperatingMode,
 ): { protocolCode: string; value: string } {
   const profile = modeProfiles.get(mode);
-  if (device.profile !== 'boost-i-hp40' || !profile) throw new DeviceError('unsupported');
+  if (!profile) throw new DeviceError('unsupported');
   return { protocolCode: 'Mode', value: profile.wire };
 }
 
@@ -114,7 +114,7 @@ export class DeviceError extends Error {
     super(
       {
         'invalid-response': 'Device data does not match the supported protocol.',
-        unsupported: 'This device does not have a supported profile for the requested operation.',
+        unsupported: 'The requested operation or required device data is unsupported.',
         unverified: 'The device contract for this operation has not been verified.',
       }[category],
     );
@@ -231,7 +231,7 @@ function enumeration(values: Map<string, unknown>, code: string): Reading<string
 
 /** Local acquisition time is explicit; no measurement timestamp was established by discovery. */
 export function normalizeReadings(
-  device: Device,
+  _device: Device,
   status: unknown,
   input: unknown,
   observedAtMs: number,
@@ -257,9 +257,9 @@ export function normalizeReadings(
     mode: blocked,
     fault: blocked,
     activity: blocked,
-    control: unavailable(device.profile === 'unknown' ? 'unsupported' : 'unverified'),
+    control: unavailable('unverified'),
   };
-  if (connectivity === 'offline' || device.profile === 'unknown') return Object.freeze(empty);
+  if (connectivity === 'offline') return Object.freeze(empty);
   const values = parameters(input);
   const rawPower = enumeration(values, 'Power');
   const power: Reading<'on' | 'off'> = !rawPower.available

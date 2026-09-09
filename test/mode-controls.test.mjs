@@ -6,10 +6,14 @@ import { AccountCoordinator } from '../dist/coordinator.js';
 import { credentials, login, reply, serverFor, success } from './fake-cloud.mjs';
 
 // Synthetic transport exercises recorded mappings, not physical compatibility.
-async function setup(t) {
+async function setup(t, untested = false) {
   const state = { Power: '0', Mode: '1', R01: '8', R02: '32', R03: '30' };
   const writes = [];
-  const device = { id: 'synthetic-device', profile: 'boost-i-hp40', sources: ['owned'] };
+  const device = {
+    id: 'synthetic-device',
+    profile: untested ? 'unknown' : 'boost-i-hp40',
+    sources: ['owned'],
+  };
   const server = await serverFor(t, (call, response) => {
     const path = call.path.split('/').at(-1);
     if (path === 'login') return reply(response, login);
@@ -17,7 +21,11 @@ async function setup(t) {
       return reply(
         response,
         success([
-          { deviceCode: device.id, model: 'PASRW040-P-BP4II-C', custModel: 'BOOSTi-INV-HP-40' },
+          {
+            deviceCode: device.id,
+            model: untested ? 'other-model' : 'PASRW040-P-BP4II-C',
+            custModel: 'BOOSTi-INV-HP-40',
+          },
         ]),
       );
     if (path === 'getMyAppectDeviceShareDataList') return reply(response, success([]));
@@ -152,10 +160,10 @@ test('explicit mode selection confirms Mode while Off before issuing Power, and 
   assert.deepEqual(h.writes, [], 'ordinary power switches cannot change mode');
 });
 
-test('real HAP handlers expose all modes, bind targets, and retain out-of-range values', async (t) => {
+test('real HAP handlers expose modes and bounded targets for untested models', async (t) => {
   const { HomebridgeAPI } = await import('../node_modules/homebridge/dist/api.js');
   const { Thermostat } = await import('../dist/thermostat.js');
-  const h = await setup(t);
+  const h = await setup(t, true);
   const coordinator = new AccountCoordinator(h.gateway);
   const updates = coordinator.updates(AbortSignal.timeout(2000));
   coordinator.start();

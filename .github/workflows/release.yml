@@ -1,10 +1,10 @@
-name: Publish beta
+name: Publish npm release
 
 on:
   workflow_dispatch:
     inputs:
       approved_version:
-        description: 'Exact beta version approved for publication (for example 0.1.0-beta.1)'
+        description: 'Exact version approved for publication (for example 1.0.0)'
         required: true
         type: string
 
@@ -48,4 +48,5 @@ jobs:
       - name: Publish using npm trusted publishing
         run: |
           archive=$(node --input-type=module -e "import fs from 'node:fs'; const p=JSON.parse(fs.readFileSync('package.json')); console.log('/tmp/'+p.name.replace('@','').replace('/','-')+'-'+p.version+'.tgz')")
-          npm publish "$archive" --ignore-scripts --access public --tag beta --provenance
+          tag=$(node -p "require('./package.json').publishConfig.tag")
+          npm publish "$archive" --ignore-scripts --access public --tag "$tag" --provenance

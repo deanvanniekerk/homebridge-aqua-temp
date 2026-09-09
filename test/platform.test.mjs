@@ -22,6 +22,12 @@ async function waitUntil(condition) {
 const uuid = (api, id = device.deviceCode) =>
   api.hap.uuid.generate(`${ACCESSORY_NAMESPACE}:device:${id}`);
 async function host(t, extraConfig = {}, cached = [], scenario = 'online') {
+  const discovered =
+    scenario === 'untested'
+      ? { ...device, model: 'other-model-private', custModel: 'other-customer-model' }
+      : scenario === 'missing-model'
+        ? { deviceCode: device.deviceCode }
+        : device;
   const server = await serverFor(t, (call, response) => {
     const path = call.path.split('/').at(-1);
     if (scenario === 'denied' && path === 'login') {
@@ -39,8 +45,11 @@ async function host(t, extraConfig = {}, cached = [], scenario = 'online') {
       return;
     }
     const result = {
-      deviceList: scenario === 'empty' ? [] : [device],
-      getMyAppectDeviceShareDataList: scenario === 'empty' ? [] : [device],
+      deviceList: scenario === 'empty' ? [] : [discovered],
+      getMyAppectDeviceShareDataList:
+        scenario === 'empty'
+          ? []
+          : [scenario === 'conflicting-model' ? { ...device, model: 'different' } : discovered],
       getDeviceStatus: { status: 'ONLINE' },
       getDataByCode: [
         { code: 'T02', value: '20.5', dataType: 'TEMP' },
@@ -160,6 +169,7 @@ test('platform registers one namespaced identity, restores it before fresh reads
     'package rename preserves the original device UUID',
   );
   assert.equal(accessory._associatedPlugin, PLUGIN_NAME);
+  assert.ok(!cold.logs.some((line) => line.includes('An untested device model')));
   assert.equal(await current(cold.api, accessory).handleGetRequest(), 20.5);
   const serialized = cold.api.platformAccessory.serialize(accessory);
   assert.deepEqual(serialized.context, { deviceId: device.deviceCode, displayUnits: 0 });
@@ -230,7 +240,7 @@ test('real login denial before discovery reaches sanitized normal/debug diagnost
         failure: 'invalid-credentials',
       });
       assert.deepEqual(report.devices, []);
-      assert.equal(report.runtime.plugin, '0.1.0-beta.1');
+      assert.equal(report.runtime.plugin, '1.0.0');
       assert.equal(report.runtime.homebridge, '2.4.0');
     }
     h.stop();
@@ -336,3 +346,46 @@ test('retired Power and Water accessories are removed without creating extra the
   );
   assert.equal(h.registered[0].context.role, undefined);
 });
+
+for (const scenario of ['untested', 'missing-model', 'conflicting-model']) {
+  test(`${scenario} registers working temperatures and warns once without claiming the tested model`, async (t) => {
+    const h = await host(
+      t,
+      {
+        includeInletTemperatureSensor: true,
+        includeOutletTemperatureSensor: true,
+        includeAmbientTemperatureSensor: true,
+      },
+      [],
+      scenario,
+    );
+    await h.launch();
+    await waitUntil(
+      () => h.registered.length === 4 && current(h.api, h.registered[0]).value === 20.5,
+    );
+    assert.equal(await current(h.api, h.registered[0]).handleGetRequest(), 20.5);
+    const C = h.api.hap.Characteristic;
+    for (const [role, value] of [
+      ['inlet', 20.5],
+      ['outlet', 22],
+      ['ambient', 18],
+    ]) {
+      const accessory = h.registered.find((a) => a.context.role === role);
+      assert.equal(
+        await accessory
+          .getService(h.api.hap.Service.TemperatureSensor)
+          .getCharacteristic(C.CurrentTemperature)
+          .handleGetRequest(),
+        value,
+      );
+    }
+    assert.equal(
+      h.registered[0].getService(h.api.hap.Service.AccessoryInformation).getCharacteristic(C.Model)
+        .value,
+      'Untested Aqua Temp model',
+    );
+    assert.equal(h.logs.filter((line) => line.includes('An untested device model')).length, 1);
+    assert.doesNotMatch(h.logs.join('\n'), /synthetic-device|other-model-private|updates stopped/);
+    assert.ok(h.calls.every((call) => !call.path.endsWith('/control')));
+  });
+}

@@ -51,12 +51,7 @@ export class BasicAccessory {
 
   private read(): number {
     const state = this.#closed ? undefined : this.#coordinator?.state(this.#id);
-    if (
-      !state ||
-      state.status !== 'healthy' ||
-      state.device.profile !== 'boost-i-hp40' ||
-      state.readings?.connectivity !== 'online'
-    )
+    if (!state || state.status !== 'healthy' || state.readings?.connectivity !== 'online')
       throw this.unavailable();
     const reading = state.readings[fields[this.#role]];
     if (!reading.available) throw this.unavailable();

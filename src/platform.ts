@@ -32,6 +32,7 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
   readonly #config: AquaTempConfig | undefined;
   readonly #coordinator: AccountCoordinator | undefined;
   #started = false;
+  readonly #warnedModels = new Set<string>();
   readonly #presentationFailures = new Set<string>();
 
   constructor(log: Logger, config: PlatformConfig, api: API) {
@@ -168,7 +169,13 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
   private synchronize(snapshot: AccountSnapshot): void {
     this.#diagnostics?.observe(snapshot);
     for (const state of snapshot.devices) {
-      if (!this.selected(state.device.id) || state.device.profile !== 'boost-i-hp40') continue;
+      if (!this.selected(state.device.id)) continue;
+      if (state.device.profile === 'unknown' && !this.#warnedModels.has(state.device.id)) {
+        this.#warnedModels.add(state.device.id);
+        this.#log.warn(
+          'An untested device model was discovered. Continuing with Aqua Temp protocol mappings; only PASRW040-P-BP4II-C / BOOSTi-INV-HP-40 has been tested. Missing or invalid capabilities remain unavailable.',
+        );
+      }
       for (const role of ['thermostat', 'inlet', 'outlet', 'ambient'] as const) {
         if (!this.enabled(role)) continue;
         const uuid = this.uuid(state.device.id, role);
@@ -191,8 +198,16 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
           const C = this.#api.hap.Characteristic;
           accessory
             .getService(this.#api.hap.Service.AccessoryInformation)
-            ?.setCharacteristic(C.Manufacturer, 'AstralPool / Fluidra')
-            .setCharacteristic(C.Model, 'BOOSTi-INV-HP-40')
+            ?.setCharacteristic(
+              C.Manufacturer,
+              state.device.profile === 'boost-i-hp40' ? 'AstralPool / Fluidra' : 'Unknown',
+            )
+            .setCharacteristic(
+              C.Model,
+              state.device.profile === 'boost-i-hp40'
+                ? 'BOOSTi-INV-HP-40'
+                : 'Untested Aqua Temp model',
+            )
             .setCharacteristic(C.SerialNumber, uuid);
           this.configureAccessory(accessory);
           this.#api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);

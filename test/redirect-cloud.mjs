@@ -23,4 +23,3 @@ export function redirectCloud(origin) {
     syncBuiltinESMExports();
   };
 }
-if (process.env.AQUA_TEST_ORIGIN) redirectCloud(process.env.AQUA_TEST_ORIGIN);
