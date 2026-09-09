@@ -271,3 +271,27 @@ test('fresh discovery applies target bounds without announcing a clamped default
   assert.equal(h.get('TargetTemperature').props.minValue, 15);
   assert.equal(h.writes.length, 0);
 });
+
+test('newly recognized modes never masquerade as Heat and missing target does not block Off', async (t) => {
+  const h = await setup(t);
+  await h.start();
+  for (const mode of ['cool', 'auto']) {
+    await h.change({
+      mode: available(mode),
+      power: available('on'),
+      control: unknown,
+      reportedTargetCelsius: unknown,
+    });
+    await assert.rejects(
+      h.get('TargetHeatingCoolingState').handleGetRequest(),
+      communicationFailure,
+    );
+    assert.ok(h.get('TargetHeatingCoolingState').props.perms.includes('pw'));
+    await h.get('TargetHeatingCoolingState').handleSetRequest(0);
+    assert.equal(await h.get('TargetHeatingCoolingState').handleGetRequest(), 0);
+  }
+  assert.deepEqual(h.writes, [
+    { kind: 'target-state', state: 'off' },
+    { kind: 'target-state', state: 'off' },
+  ]);
+});

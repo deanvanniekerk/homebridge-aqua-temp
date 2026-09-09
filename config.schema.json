@@ -52,7 +52,19 @@
       },
       "debug": {
         "title": "Debug diagnostics",
-        "description": "Write a sanitized JSON diagnostic report to the Homebridge log, at most once every five minutes. After enabling, restart the platform and search the log for “Diagnostic report”.",
+        "description": "Write a sanitized JSON diagnostic report to the Homebridge log, at most once every five minutes. After enabling, restart the platform and search the log for \u201cDiagnostic report\u201d.",
+        "type": "boolean",
+        "default": false
+      },
+      "includePowerSwitch": {
+        "title": "Include separate Power switch",
+        "description": "Optional independent power accessory. Off remains usable when other capabilities are unknown; On currently requires verified Heat mode. Restart to apply.",
+        "type": "boolean",
+        "default": false
+      },
+      "includeWaterTemperatureSensor": {
+        "title": "Include separate Water Temperature sensor",
+        "description": "Optional independent inlet water temperature accessory that does not depend on thermostat activity or target support. Restart to apply.",
         "type": "boolean",
         "default": false
       }

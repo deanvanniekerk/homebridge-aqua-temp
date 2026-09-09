@@ -107,13 +107,13 @@ export class Thermostat {
     this.bind(this.#targetState, () => {
       const readings = this.readings();
       if (this.value(readings.power) === 'off') return C.TargetHeatingCoolingState.OFF;
-      this.value(readings.mode);
+      if (this.value(readings.mode) !== 'heat') throw this.unavailable();
       return C.TargetHeatingCoolingState.HEAT;
     });
     this.#targetState.onSet(async (value) => {
       if (value !== C.TargetHeatingCoolingState.OFF && value !== C.TargetHeatingCoolingState.HEAT)
         throw this.invalid();
-      if (!this.range()) throw this.unavailable();
+      if (value !== C.TargetHeatingCoolingState.OFF && !this.range()) throw this.unavailable();
       await this.command({
         kind: 'target-state',
         state: value === C.TargetHeatingCoolingState.OFF ? 'off' : 'heat',
@@ -125,7 +125,7 @@ export class Thermostat {
       const activity = this.value(readings.activity);
       if (activity === 'idle') return C.CurrentHeatingCoolingState.OFF;
       if (activity === 'heating' && this.value(readings.power) === 'on') {
-        this.value(readings.mode);
+        if (this.value(readings.mode) !== 'heat') throw this.unavailable();
         return C.CurrentHeatingCoolingState.HEAT;
       }
       throw this.unavailable();
@@ -171,7 +171,6 @@ export class Thermostat {
         minStep: range?.minStep ?? null,
         perms,
       });
-      this.#targetState.setProps({ perms });
     }
     for (const { characteristic, read } of this.#bindings) {
       try {

@@ -51,7 +51,18 @@ async function host(t, extraConfig = {}, cached = [], scenario = 'online') {
     removed = [],
     updated = [],
     logs = [];
-  api.on('registerPlatformAccessories', (accessories) => registered.push(...accessories));
+  let failedRegistration = false;
+  api.on('registerPlatformAccessories', (accessories) => {
+    if (
+      scenario === 'registration-failure' &&
+      !failedRegistration &&
+      accessories[0].context.role === 'power'
+    ) {
+      failedRegistration = true;
+      throw new Error('synthetic-private-registration-error');
+    }
+    registered.push(...accessories);
+  });
   api.on('unregisterPlatformAccessories', (accessories) => removed.push(...accessories));
   api.on('updatePlatformAccessories', (accessories) => updated.push(...accessories));
   const log = Object.fromEntries(
@@ -100,19 +111,36 @@ function current(api, accessory) {
 }
 
 test('platform registers one namespaced identity, restores it before fresh reads and retains temporary omissions', async (t) => {
-  const cold = await host(t);
+  const cold = await host(t, { includePowerSwitch: true, includeWaterTemperatureSensor: true });
   await cold.launch();
   await waitUntil(
-    () => cold.registered.length === 1 && current(cold.api, cold.registered[0]).value === 20.5,
+    () => cold.registered.length === 3 && current(cold.api, cold.registered[0]).value === 20.5,
   );
-  const accessory = cold.registered[0];
+  const accessory = cold.registered.find((item) => !item.context.role);
+  const power = cold.registered.find((item) => item.context.role === 'power');
+  const water = cold.registered.find((item) => item.context.role === 'water');
+  assert.ok(power.getService(cold.api.hap.Service.Switch));
+  assert.equal(
+    await water
+      .getService(cold.api.hap.Service.TemperatureSensor)
+      .getCharacteristic(cold.api.hap.Characteristic.CurrentTemperature)
+      .handleGetRequest(),
+    20.5,
+  );
+  assert.equal(new Set(cold.registered.map((item) => item.UUID)).size, 3);
   assert.equal(accessory.UUID, uuid(cold.api));
   assert.equal(accessory._associatedPlugin, PLUGIN_NAME);
   assert.equal(await current(cold.api, accessory).handleGetRequest(), 20.5);
   const serialized = cold.api.platformAccessory.serialize(accessory);
   assert.deepEqual(serialized.context, { deviceId: device.deviceCode, displayUnits: 0 });
   cold.stop();
-  const warm = await host(t, {}, [serialized], 'empty');
+  const warm = await host(
+    t,
+    { includePowerSwitch: true, includeWaterTemperatureSensor: true },
+    cold.registered.map((item) => cold.api.platformAccessory.serialize(item)),
+    'empty',
+  );
+  assert.equal(warm.restored.length, 3);
   await assert.rejects(
     current(warm.api, warm.restored[0]).handleGetRequest(),
     (error) => error === -70402,
@@ -173,4 +201,51 @@ test('real login denial before discovery reaches sanitized normal/debug diagnost
     }
     h.stop();
   }
+});
+
+test('one accessory registration failure is retried without stopping other capabilities or exposing raw errors', async (t) => {
+  const h = await host(
+    t,
+    { includePowerSwitch: true, includeWaterTemperatureSensor: true },
+    [],
+    'registration-failure',
+  );
+  await h.launch();
+  await waitUntil(() => h.registered.length === 3);
+  assert.equal(new Set(h.registered.map((item) => item.UUID)).size, 3);
+  const water = h.registered.find((item) => item.context.role === 'water');
+  assert.equal(
+    await water
+      .getService(h.api.hap.Service.TemperatureSensor)
+      .getCharacteristic(h.api.hap.Characteristic.CurrentTemperature)
+      .handleGetRequest(),
+    20.5,
+  );
+  assert.equal(
+    h.logs.filter((line) => line.includes('Accessory capability temporarily unavailable')).length,
+    1,
+  );
+  assert.doesNotMatch(h.logs.join('\n'), /synthetic-private|updates stopped/);
+});
+
+test('fallback accessories default off, can be selected independently, and are removed when disabled', async (t) => {
+  const defaults = await host(t);
+  await defaults.launch();
+  await waitUntil(() => defaults.registered.length === 1);
+  assert.equal(defaults.registered[0].context.role, undefined);
+  defaults.stop();
+  const waterOnly = await host(t, { includeWaterTemperatureSensor: true });
+  await waterOnly.launch();
+  await waitUntil(() => waterOnly.registered.length === 2);
+  assert.deepEqual(
+    waterOnly.registered.map((a) => a.context.role),
+    [undefined, 'water'],
+  );
+  const cached = waterOnly.registered.map((a) => waterOnly.api.platformAccessory.serialize(a));
+  waterOnly.stop();
+  const disabled = await host(t, {}, cached);
+  await disabled.launch();
+  assert.equal(disabled.removed.length, 1);
+  assert.equal(disabled.removed[0].context.role, 'water');
+  assert.equal(disabled.registered.length, 0);
 });

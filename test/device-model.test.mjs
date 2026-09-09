@@ -132,8 +132,6 @@ test('missing or invalid Heat target cannot fall back to the stale generic targe
   for (const replacement of [
     [{ ...heat, value: '' }],
     [{ ...heat, value: 'NaN' }],
-    [{ ...heat, value: '14.5' }],
-    [{ ...heat, value: '40.5' }],
     [{ ...heat, dataType: 'ENUM' }],
     [heat, heat],
   ]) {
@@ -147,7 +145,7 @@ test('missing or invalid Heat target cannot fall back to the stale generic targe
 
 test('unverified mode/activity never become fabricated Heat or Idle', () => {
   const [device] = discoverDevices(owned, []).devices;
-  for (const mode of ['0', '2', 'unknown']) {
+  for (const mode of ['3', 'unknown', 'toString', '__proto__']) {
     const fields = telemetry.map((entry) =>
       entry.code === 'Mode'
         ? { ...entry, value: mode }
@@ -222,4 +220,69 @@ test('only a clear fault status and zero compressor frequency establish inactive
     1000,
   );
   assert.equal(duplicate.activity.available, false);
+});
+
+test('app-observed Cool and Auto targets stay independent of stale aliases and write capability', () => {
+  const [device] = discoverDevices(owned, []).devices;
+  // Values recorded during the 2026-09-09 owner-operated app round trip.
+  for (const [wireMode, expectedMode, target, alias] of [
+    ['0', 'cool', 0, 0],
+    ['0', 'cool', 0.5, 0.5],
+    ['0', 'cool', 8, 0.5],
+    ['2', 'auto', 30.5, 30.5],
+    ['2', 'auto', 30, 30.5],
+  ]) {
+    const fields = telemetry.filter(
+      (row) => !['Mode', 'R01', 'R03', 'Set_Temp'].includes(row.code),
+    );
+    fields.push(
+      { code: 'Mode', dataType: 'ENUM', value: wireMode },
+      {
+        code: 'R01',
+        dataType: 'TEMP',
+        value: String(expectedMode === 'cool' ? target : 8),
+        rangeStart: '8',
+        rangeEnd: '35',
+      },
+      {
+        code: 'R03',
+        dataType: 'TEMP',
+        value: String(expectedMode === 'auto' ? target : 30),
+        rangeStart: '8',
+        rangeEnd: '40',
+      },
+      { code: 'Set_Temp', dataType: 'TEMP', value: String(alias) },
+      { code: 'O07', dataType: 'DIGI1', value: '0' },
+    );
+    const state = normalizeReadings(device, { status: 'ONLINE', isFault: false }, fields, 1000);
+    assert.deepEqual(state.mode, { available: true, value: expectedMode });
+    assert.deepEqual(state.reportedTargetCelsius, { available: true, value: target });
+    assert.equal(
+      state.control.available,
+      false,
+      'reading evidence does not enable unverified writes',
+    );
+    assert.deepEqual(state.activity, { available: true, value: 'idle' });
+    assert.deepEqual(state.power, { available: true, value: 'off' });
+  }
+});
+
+test('malformed optional rows and stored out-of-range targets do not erase usable readings', () => {
+  const [device] = discoverDevices(owned, []).devices;
+  const fields = telemetry.map((row) => (row.code === 'R02' ? { ...row, value: '14.5' } : row));
+  const state = normalizeReadings(
+    device,
+    { status: 'ONLINE' },
+    [...fields, null, { value: 'bad optional row' }, { code: 'T03', dataType: 'TEMP', value: '' }],
+    1000,
+  );
+  assert.deepEqual(state.power, { available: true, value: 'off' });
+  assert.deepEqual(state.waterCelsius, { available: true, value: 20.5 });
+  assert.deepEqual(state.reportedTargetCelsius, { available: true, value: 14.5 });
+  assert.equal(state.outletCelsius.available, false);
+  assert.equal(
+    state.control.available,
+    false,
+    'out-of-range target is readable but cannot enable writes',
+  );
 });

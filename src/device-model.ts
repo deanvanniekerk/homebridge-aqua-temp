@@ -1,5 +1,6 @@
 import { isRecord } from './cloud-error.js';
 
+export type OperatingMode = 'heat' | 'cool' | 'auto';
 export type DeviceProfile = 'boost-i-hp40' | 'unknown';
 export interface Device {
   readonly id: string;
@@ -25,7 +26,7 @@ export interface DeviceReadings {
   readonly ambientCelsius: Reading<number>;
   readonly reportedTargetCelsius: Reading<number>;
   readonly power: Reading<'on' | 'off'>;
-  readonly mode: Reading<'heat'>;
+  readonly mode: Reading<OperatingMode>;
   readonly fault: Reading<boolean>;
   readonly activity: Reading<'heating' | 'idle' | 'defrost' | 'flow-fault'>;
   readonly control: Reading<{
@@ -38,7 +39,9 @@ export interface DeviceReadings {
 export const telemetrySelectors = Object.freeze([
   'Power',
   'Mode',
+  'R01',
   'R02',
+  'R03',
   'T02',
   'T03',
   'T05',
@@ -149,14 +152,19 @@ function parameters(input: unknown): Map<string, unknown> {
   if (!Array.isArray(input) || input.length > 1024) throw new DeviceError('invalid-response');
   const result = new Map<string, unknown>();
   for (const value of input) {
-    if (!isRecord(value) || !identifier(value.code)) throw new DeviceError('invalid-response');
+    // Unidentifiable optional rows cannot invalidate unrelated, explicitly requested fields.
+    if (!isRecord(value) || !identifier(value.code)) continue;
     // Duplicate selectors cannot establish which value is current, even if equal.
     result.set(value.code, result.has(value.code) ? null : value);
   }
   return result;
 }
 
-function temperature(values: Map<string, unknown>, code: string): Reading<number> {
+function temperature(
+  values: Map<string, unknown>,
+  code: string,
+  enforceRange = true,
+): Reading<number> {
   if (!values.has(code)) return unavailable('missing');
   const field = values.get(code);
   if (!isRecord(field) || field.dataType !== 'TEMP') return unavailable('invalid');
@@ -165,8 +173,9 @@ function temperature(values: Map<string, unknown>, code: string): Reading<number
   const lower = decimal(field.rangeStart);
   const upper = decimal(field.rangeEnd);
   if (
-    (field.rangeStart !== undefined && field.rangeStart !== '') ||
-    (field.rangeEnd !== undefined && field.rangeEnd !== '')
+    enforceRange &&
+    ((field.rangeStart !== undefined && field.rangeStart !== '') ||
+      (field.rangeEnd !== undefined && field.rangeEnd !== ''))
   ) {
     if (
       lower === undefined ||
@@ -229,14 +238,22 @@ export function normalizeReadings(
         ? available('on')
         : unavailable('unsupported');
   const rawMode = enumeration(values, 'Mode');
-  const mode: Reading<'heat'> = !rawMode.available
+  const modes = new Map<string, OperatingMode>([
+    ['0', 'cool'],
+    ['1', 'heat'],
+    ['2', 'auto'],
+  ]);
+  const selected = rawMode.available ? modes.get(rawMode.value) : undefined;
+  const mode: Reading<OperatingMode> = !rawMode.available
     ? rawMode
-    : rawMode.value === '1'
-      ? available('heat')
+    : selected
+      ? available(selected)
       : unavailable('unsupported');
-  // Owner app changes track R02 in Heat mode while Set_Temp can retain an old target.
+  // The app retains one target per mode; Set_Temp can lag behind those fields.
+  // Report out-of-range stored targets faithfully; write constraints are separate.
+  const targets = { heat: 'R02', cool: 'R01', auto: 'R03' };
   const reportedTargetCelsius = mode.available
-    ? temperature(values, 'R02')
+    ? temperature(values, targets[mode.value], false)
     : unavailable('unsupported');
   const rawFault: unknown = status.isFault ?? status.is_fault;
   const fault =
@@ -266,7 +283,13 @@ export function normalizeReadings(
         ? available('idle' as const)
         : unavailable('unverified'),
     control:
-      mode.available && power.available && reportedTargetCelsius.available
+      mode.available &&
+      mode.value === 'heat' &&
+      power.available &&
+      reportedTargetCelsius.available &&
+      reportedTargetCelsius.value >= heatControl.minimumCelsius &&
+      reportedTargetCelsius.value <= heatControl.maximumCelsius &&
+      Number.isInteger(reportedTargetCelsius.value / heatControl.stepCelsius)
         ? available(heatControl)
         : unavailable('unsupported'),
   });

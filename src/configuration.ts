@@ -7,10 +7,20 @@ export interface AquaTempConfig {
   readonly deviceIds: readonly string[];
   readonly pollInterval: number;
   readonly debug: boolean;
+  readonly includePowerSwitch: boolean;
+  readonly includeWaterTemperatureSensor: boolean;
 }
 
 type Field =
-  'configuration' | 'name' | 'username' | 'password' | 'deviceIds' | 'pollInterval' | 'debug';
+  | 'configuration'
+  | 'name'
+  | 'username'
+  | 'password'
+  | 'deviceIds'
+  | 'pollInterval'
+  | 'debug'
+  | 'includePowerSwitch'
+  | 'includeWaterTemperatureSensor';
 const messages: Record<Field, string> = {
   configuration: 'Configuration must be an object.',
   name: 'Name must contain 1–64 characters without leading/trailing whitespace or line breaks.',
@@ -19,6 +29,8 @@ const messages: Record<Field, string> = {
   deviceIds: 'Device IDs must be a list of up to 100 unique, nonblank IDs (256 characters each).',
   pollInterval: 'Poll interval must be a whole number from 30 to 300 seconds.',
   debug: 'Debug must be true or false.',
+  includePowerSwitch: 'Include power switch must be true or false.',
+  includeWaterTemperatureSensor: 'Include water temperature sensor must be true or false.',
 };
 export class ConfigurationError extends Error {
   constructor(readonly field: Field) {
@@ -65,7 +77,16 @@ export function parseConfig(input: unknown): AquaTempConfig {
     throw new ConfigurationError('pollInterval');
   const debug: unknown = input.debug === undefined ? false : input.debug;
   if (typeof debug !== 'boolean') throw new ConfigurationError('debug');
+  const includePowerSwitch: unknown =
+    input.includePowerSwitch === undefined ? false : input.includePowerSwitch;
+  const includeWaterTemperatureSensor: unknown =
+    input.includeWaterTemperatureSensor === undefined ? false : input.includeWaterTemperatureSensor;
+  if (typeof includePowerSwitch !== 'boolean') throw new ConfigurationError('includePowerSwitch');
+  if (typeof includeWaterTemperatureSensor !== 'boolean')
+    throw new ConfigurationError('includeWaterTemperatureSensor');
   return Object.freeze({
+    includePowerSwitch,
+    includeWaterTemperatureSensor,
     name,
     username: input.username,
     password: input.password,

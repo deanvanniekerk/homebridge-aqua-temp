@@ -266,3 +266,40 @@ test('supported controls use absolute R02/Power writes and require fresh Heat-mo
     'preflight blocks faults and externally changed modes without sending a mode command',
   );
 });
+
+test('Off remains available with unknown mode, target or fault while unverified On stays blocked', async (t) => {
+  let mode = 'unknown';
+  const writes = [];
+  const server = await serverFor(t, (call, response) => {
+    if (call.path.endsWith('/login')) return reply(response, login);
+    if (call.path.endsWith('/getDeviceStatus'))
+      return reply(response, success({ status: 'ONLINE' }));
+    if (call.path.endsWith('/getDataByCode'))
+      return reply(
+        response,
+        success([
+          { code: 'Power', dataType: 'ENUM', value: '1' },
+          { code: 'Mode', dataType: 'ENUM', value: mode },
+        ]),
+      );
+    if (call.path.endsWith('/control')) {
+      writes.push(call.body.param);
+      return reply(response, success(null));
+    }
+    throw new Error('Unexpected request');
+  });
+  const gateway = new AquaTempGateway(new AquaTempClient(credentials, { origin: server.origin }));
+  t.after(() => gateway.close());
+  const device = { id: 'synthetic-device', profile: 'boost-i-hp40', sources: ['shared'] };
+  const signal = new AbortController().signal;
+  for (mode of ['unknown', '0', '2', '1']) {
+    await gateway.write(device, { kind: 'target-state', state: 'off' }, signal);
+    await assert.rejects(gateway.write(device, { kind: 'target-state', state: 'heat' }, signal));
+  }
+  assert.equal(writes.length, 4);
+  assert.ok(
+    writes.every(
+      (batch) => batch.length === 1 && batch[0].protocolCode === 'Power' && batch[0].value === '0',
+    ),
+  );
+});

@@ -34,6 +34,7 @@ test('distribution contains only reviewed runtime files and refuses publication'
     'LICENSE',
     'README.md',
     'config.schema.json',
+    'dist/basic-accessory.js',
     'dist/cloud-client.js',
     'dist/cloud-error.js',
     'dist/cloud-http.js',

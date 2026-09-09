@@ -13,6 +13,9 @@ test('runtime and UI schema agree on credentials, identity selection, interval a
   const validate = new Ajv({ strict: false, formats: { password: true } }).compile(schema);
   const cases = [
     [valid, true],
+    [{ ...valid, includePowerSwitch: true, includeWaterTemperatureSensor: false }, true],
+    [{ ...valid, includePowerSwitch: 'true' }, false],
+    [{ ...valid, includeWaterTemperatureSensor: 1 }, false],
     [{ ...valid, pollInterval: 30, debug: true, deviceIds: ['one', 'two'] }, true],
     [{ ...valid, pollInterval: 300 }, true],
     [{ ...valid, pollInterval: 29 }, false],
@@ -30,10 +33,14 @@ test('runtime and UI schema agree on credentials, identity selection, interval a
     [{ ...valid, password: ' ' }, false],
     [{ username: valid.username }, false],
     [null, false],
-    ...['name', 'deviceIds', 'debug', 'pollInterval'].map((key) => [
-      { ...valid, [key]: null },
-      false,
-    ]),
+    ...[
+      'name',
+      'deviceIds',
+      'debug',
+      'pollInterval',
+      'includePowerSwitch',
+      'includeWaterTemperatureSensor',
+    ].map((key) => [{ ...valid, [key]: null }, false]),
     [{ ...valid, name: '🌊'.repeat(64) }, true],
     [{ ...valid, name: '🌊'.repeat(65) }, false],
   ];
@@ -45,6 +52,8 @@ test('runtime and UI schema agree on credentials, identity selection, interval a
   const config = parseConfig(valid);
   assert.equal(config.pollInterval, 60);
   assert.equal(config.debug, false);
+  assert.equal(config.includePowerSwitch, false);
+  assert.equal(config.includeWaterTemperatureSensor, false);
   assert.deepEqual(config.deviceIds, []);
   assert.equal(config.name, 'Aqua Temp');
 });

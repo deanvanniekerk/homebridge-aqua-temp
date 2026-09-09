@@ -107,20 +107,13 @@ export class AquaTempGateway implements DeviceGateway {
 
   validateCommand(device: Device, command: DeviceCommand, readings: DeviceReadings): void {
     encodeCommand(device, command);
-    if (
-      readings.connectivity !== 'online' ||
-      !readings.control.available ||
-      !readings.mode.available ||
-      !readings.power.available
-    )
+    if (readings.connectivity !== 'online' || !readings.power.available)
       throw new DeviceError('unsupported');
-    // A known fault must not prevent a supported Off request, but On/target changes require
-    // an explicitly clear fault status. No command changes the vendor operating mode.
-    if (
-      !(command.kind === 'target-state' && command.state === 'off') &&
-      (!readings.fault.available || readings.fault.value)
-    )
-      throw new DeviceError('unverified');
+    // Power-off is independent of selected mode, target and activity. It never changes mode.
+    if (command.kind === 'target-state' && command.state === 'off') return;
+    if (!readings.control.available || !readings.mode.available || readings.mode.value !== 'heat')
+      throw new DeviceError('unsupported');
+    if (!readings.fault.available || readings.fault.value) throw new DeviceError('unverified');
   }
 
   async write(device: Device, command: DeviceCommand, signal: AbortSignal): Promise<void> {

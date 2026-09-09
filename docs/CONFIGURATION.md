@@ -8,6 +8,14 @@ The platform validates configuration during construction. A rejected configurati
 
 The development platform connects to Aqua Temp for discovery, readings and the limited Heat controls described in DEVICE_MODEL.md. The platform observes coordinator snapshots and provides the diagnostic behavior below, including account failures before any device is discovered.
 
+## Optional accessories
+
+`includePowerSwitch` and `includeWaterTemperatureSensor` are independent booleans, both **false by default**. Enable either in the plugin settings and restart the child bridge to add a separate Power switch or inlet Water Temperature sensor for each selected, supported device. The default layout retains only the existing thermostat.
+
+The additional accessories use stable identities and the same polling session; they do not add cloud requests. The water sensor does not depend on the target, mode or compressor activity. Power Off does not depend on a supported target or mode; Power On currently requires the verified Heat contract and fresh, clear fault status. These options do not enable unverified Cool/Auto writes. A stale/offline device still becomes unavailable. Their behavior is covered with real HAP tests; the separate-accessory presentation has not yet been validated in Apple Home on iHost.
+
+Disabling an option and restarting removes that optional accessory. Re-enabling uses the same generated identity, but removal can lose its Apple Home room assignments or automations. Temporary missing telemetry never removes accessories. Credentials and telemetry are not stored in accessory context.
+
 ## Diagnostic contract
 
 `Diagnostics.observe` accepts a normalized account snapshot and emits a status/failure transition. Repeated identical failures are suppressed for five minutes. Healthy polls remain quiet in normal mode; recovery emits one message. Invalid credentials, sharing permissions and session contention include fixed troubleshooting hints. Normal and debug fault messages include sample age and retry timing. Account-level errors and recoveries have their own bounded transition record, so a failed initial login is actionable even with zero discovered devices.
