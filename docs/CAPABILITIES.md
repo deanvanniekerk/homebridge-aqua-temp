@@ -53,3 +53,7 @@ Together with the Heat and Cool comparisons, the observed selection mapping for 
 ### Restoration to Heat
 
 The owner selected Heat and confirmed the app target automatically returned to 32°C without adjustment. At 2026-09-09 07:18:28.862 UTC, the capture confirmed Online, fault false, Power=0, Mode=1, Set_Temp=32.0, R02=32.0 and O07=0. R01 remained 0.0 and R03 remained 30.0. This completes the app-driven Heat → Cool → Auto → Heat comparison with power Off throughout the captured states and the original Heat target restored. The next manual check will distinguish the candidate Auto target from coincidentally matching values by changing it one app increment while Off.
+
+### Auto target changed by one app increment
+
+The owner selected Auto and tapped + once from its stored 30°C target, reporting 30.5°C. At 2026-09-09 07:20:32.487 UTC, the existing-client capture confirmed Online, fault false, Power=0, Power_State=0, Mode=2, Set_Temp=30.5, R03=30.5 and O07=0. R02 remained 32.0 and R01 remained 0.0. The controlled change identifies R03 as the observed Auto target field and establishes a 0.5°C app increment at this value. Set_Temp followed the selected target. No API command was sent by the test observer; API write behavior, full Auto bounds and increment behavior across that range remain unverified. Restoration of Auto's stored target to 30°C is the next owner-assisted step.
