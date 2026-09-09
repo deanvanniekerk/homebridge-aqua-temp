@@ -16,7 +16,7 @@ Current ranges and evidence boundaries are in [compatibility](COMPATIBILITY.md),
 
 ## Distribution and migration
 
-Use a distinct verified npm identity, compiled ESM entry point, MIT license and configuration schema. Keep private evidence and development dependencies out of the runtime artifact. Test clean installation/removal on the declared matrix.
+Use a distinct verified npm identity, compiled ESM entry point, MIT license and configuration schema. Keep private evidence and development dependencies out of the runtime artifact. Validate clean installation/removal manually when packaging changes.
 
 Document account sharing, backup, disabling the old integration, pairing, automation recreation and rollback. New accessory identity does not preserve old Home automations. Use least-privilege authenticated publishing with provenance where supported; never commit tokens.
 

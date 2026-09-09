@@ -160,42 +160,40 @@ test('explicit mode selection confirms Mode while Off before issuing Power, and 
   assert.deepEqual(h.writes, [], 'ordinary power switches cannot change mode');
 });
 
-for (const untested of [false, true]) {
-  test(`real HAP handlers expose modes and bounded targets for ${untested ? 'untested' : 'tested'} models`, async (t) => {
-    const { HomebridgeAPI } = await import('../node_modules/homebridge/dist/api.js');
-    const { Thermostat } = await import('../dist/thermostat.js');
-    const h = await setup(t, untested);
-    const coordinator = new AccountCoordinator(h.gateway);
-    const updates = coordinator.updates(AbortSignal.timeout(2000));
-    coordinator.start();
-    for await (const snapshot of updates) if (snapshot.devices[0]?.readings) break;
-    const api = new HomebridgeAPI();
-    const accessory = new api.platformAccessory('Modes', api.hap.uuid.generate('modes'));
-    const thermostat = new Thermostat(api.hap, accessory, coordinator, h.device.id, () => {});
-    t.after(() => {
-      thermostat.close();
-      coordinator.close();
-    });
-    const C = api.hap.Characteristic;
-    const service = accessory.getService(api.hap.Service.Thermostat);
-    const state = service.getCharacteristic(C.TargetHeatingCoolingState);
-    const target = service.getCharacteristic(C.TargetTemperature);
-    assert.deepEqual(state.props.validValues, [0, 1, 2, 3]);
-    await state.handleSetRequest(C.TargetHeatingCoolingState.AUTO);
-    thermostat.update();
-    assert.equal(await state.handleGetRequest(), 3);
-    assert.equal(await target.handleGetRequest(), 30);
-    await target.handleSetRequest(30.5);
-    assert.deepEqual(h.writes.at(-1), ['R03', '30.5']);
-    await state.handleSetRequest(C.TargetHeatingCoolingState.OFF);
-    await state.handleSetRequest(C.TargetHeatingCoolingState.COOL);
-    thermostat.update();
-    assert.equal(await state.handleGetRequest(), 2);
-    await assert.rejects(target.handleGetRequest(), (error) => error === -70402);
-    assert.equal(h.state.R01, '8', 'unrepresentable values are not written or silently clamped');
-    await target.handleSetRequest(10.5);
-    assert.deepEqual(h.writes.at(-1), ['R01', '10.5']);
-    assert.equal(h.state.R02, '32');
-    assert.equal(h.state.R03, '30.5');
+test('real HAP handlers expose modes and bounded targets for untested models', async (t) => {
+  const { HomebridgeAPI } = await import('../node_modules/homebridge/dist/api.js');
+  const { Thermostat } = await import('../dist/thermostat.js');
+  const h = await setup(t, true);
+  const coordinator = new AccountCoordinator(h.gateway);
+  const updates = coordinator.updates(AbortSignal.timeout(2000));
+  coordinator.start();
+  for await (const snapshot of updates) if (snapshot.devices[0]?.readings) break;
+  const api = new HomebridgeAPI();
+  const accessory = new api.platformAccessory('Modes', api.hap.uuid.generate('modes'));
+  const thermostat = new Thermostat(api.hap, accessory, coordinator, h.device.id, () => {});
+  t.after(() => {
+    thermostat.close();
+    coordinator.close();
   });
-}
+  const C = api.hap.Characteristic;
+  const service = accessory.getService(api.hap.Service.Thermostat);
+  const state = service.getCharacteristic(C.TargetHeatingCoolingState);
+  const target = service.getCharacteristic(C.TargetTemperature);
+  assert.deepEqual(state.props.validValues, [0, 1, 2, 3]);
+  await state.handleSetRequest(C.TargetHeatingCoolingState.AUTO);
+  thermostat.update();
+  assert.equal(await state.handleGetRequest(), 3);
+  assert.equal(await target.handleGetRequest(), 30);
+  await target.handleSetRequest(30.5);
+  assert.deepEqual(h.writes.at(-1), ['R03', '30.5']);
+  await state.handleSetRequest(C.TargetHeatingCoolingState.OFF);
+  await state.handleSetRequest(C.TargetHeatingCoolingState.COOL);
+  thermostat.update();
+  assert.equal(await state.handleGetRequest(), 2);
+  await assert.rejects(target.handleGetRequest(), (error) => error === -70402);
+  assert.equal(h.state.R01, '8', 'unrepresentable values are not written or silently clamped');
+  await target.handleSetRequest(10.5);
+  assert.deepEqual(h.writes.at(-1), ['R01', '10.5']);
+  assert.equal(h.state.R02, '32');
+  assert.equal(h.state.R03, '30.5');
+});

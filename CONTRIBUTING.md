@@ -11,9 +11,9 @@ npm ci
 npm run check
 ```
 
-`npm run check` runs formatting, lint, strict TypeScript checks and the test suite. `npm run format` applies formatting. Tests use local fake cloud servers and synthetic credentials; never point them at a real account or Homebridge installation. The package test downloads public dependencies into a temporary consumer and removes it afterward.
+`npm run check` runs formatting, lint, strict TypeScript checks and the test suite. `npm run format` applies formatting. Tests use local fake cloud servers and synthetic credentials; never point them at a real account or Homebridge installation.
 
-For a focused change, run `npm run build` then `node --test test/<file>.test.mjs`. Run the full checks before submitting. Changes to dependencies, runtime engines or integration also need the ARMv7 lane. With a clean committed checkout and a local Docker engine:
+For a focused change, run `npm run build` then `node --test test/<file>.test.mjs`. Run the full checks before submitting. Keep individual cases below 1,000 ms in the CI timing reports; package lifecycle and extended soak checks are manual release tasks. Changes to dependencies, runtime engines or integration also need the ARMv7 lane. With a clean committed checkout and a local Docker engine:
 
 ```sh
 bash scripts/check-armv7.sh

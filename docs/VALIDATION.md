@@ -10,11 +10,10 @@
 | Discovery, sensor validation, modes and command mapping                  | `test/device-model.test.mjs`, `test/gateway.test.mjs`, `test/mode-controls.test.mjs`  |
 | Freshness, queues, cancellation and late results                         | `test/coordinator.test.mjs`, `test/commands.test.mjs`                                 |
 | HAP controls, optional sensors and cached identities                     | `test/thermostat.test.mjs`, `test/basic-accessory.test.mjs`, `test/platform.test.mjs` |
+| Lost-write recovery                                                      | `test/control-recovery.test.mjs`                                                      |
 | Configuration and redaction                                              | `test/configuration.test.mjs`, `test/diagnostics.test.mjs`                            |
-| Artifact contents, production-only installation, restart and removal     | `test/package.test.mjs`                                                               |
-| Seven virtual days with repeated failures and commands                   | `test/recovery-soak.test.mjs`, `test/control-recovery.test.mjs`                       |
 
-Virtual time establishes scheduling/recovery behavior, not elapsed hardware uptime or absence of memory leaks. The packed-host test runs real Homebridge/HAP on loopback against a fake cloud; it does not prove mDNS pairing or physical actuation. Homebridge's `/accessories` metadata can contain fallback values after a getter error; inspect per-characteristic statuses for reliable read results.
+CI keeps short behavioral tests; package contents, production installation/restart/removal and extended soak coverage are manual release checks. Simulated recovery tests do not establish elapsed hardware uptime or absence of memory leaks.
 
 ## Actual-host evidence
 

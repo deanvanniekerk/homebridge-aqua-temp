@@ -3,7 +3,7 @@
 | Component   | Supported baseline                        | Evidence                                      |
 | ----------- | ----------------------------------------- | --------------------------------------------- |
 | Node.js     | `^22.23.2`                                | Minimum/latest Node 22 CI; ARMv7 baseline     |
-| Homebridge  | `^2.4.0`                                  | Real packed-process tests use 2.4.0           |
+| Homebridge  | `^2.4.0`                                  | Owner-tested Homebridge 2.4.0 installation    |
 | Linux x64   | CI                                        | Minimum/latest Node 22                        |
 | Linux ARMv7 | CI under emulation; iHost installation    | 32-bit runtime, no plugin native dependencies |
 | macOS arm64 | Local development tests                   | Not an iHost performance substitute           |

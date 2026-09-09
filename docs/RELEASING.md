@@ -16,7 +16,7 @@ See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) for set
 ## Prepare and publish
 
 1. Update `package.json` and `package-lock.json` to an unused version. Set `publishConfig.tag` to `latest` for stable versions or `beta` for betas. Update current documentation and release notes.
-2. Run `npm run check` and review CI for the exact commit, including minimum/latest Node 22 and emulated ARMv7. Package tests verify contents, clean installation, restart, removal and publication guards.
+2. Run `npm run check` and review CI for the exact commit, including minimum/latest Node 22 and emulated ARMv7. Inspect the packed artifact and manually check clean installation, restart and removal when packaging changes; these longer checks are outside CI.
 3. Merge the reviewed changes. Manually run **Publish npm release** on `main`, entering the exact version in `approved_version`.
 4. Wait for the workflow's checks, then approve the `npm` environment deployment. The guard requires the exact approved version, public npm access and the matching dist-tag. A push, tag or PR never publishes automatically.
 5. Verify the published version, dist-tag and provenance on npm. Create release notes linked to the published commit. Hardware testing remains a separate owner-operated step.
