@@ -1,6 +1,6 @@
 # Development foundation
 
-The original dynamic platform now connects the [cloud client](CLOUD_CLIENT.md), [device model](DEVICE_MODEL.md) and [coordinator](COORDINATOR.md) to real Homebridge thermostat characteristics. See [adapter behavior and remaining gates](HOMEBRIDGE_ADAPTER.md). It discovers the supported profile, restores cached identities and exposes verified water readings. Target writes and activity remain unavailable with the actual profile because their protocol evidence is incomplete.
+The original dynamic platform now connects the [cloud client](CLOUD_CLIENT.md), [device model](DEVICE_MODEL.md) and [coordinator](COORDINATOR.md) to real Homebridge thermostat characteristics. See [adapter behavior and remaining gates](HOMEBRIDGE_ADAPTER.md). It discovers the supported profile, restores cached identities and exposes water readings and the limited Heat controls. Active heating versus defrost remains unavailable because the protocol evidence is incomplete.
 
 [Configuration validation and diagnostics](CONFIGURATION.md) now include runtime transitions and sanitized JSON reports in the Homebridge log when debug is enabled. This is an unfinished development package, not a release or hardware-validation claim.
 

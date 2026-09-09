@@ -46,11 +46,22 @@ async function setup(t, options = {}) {
     },
     { scheduler },
   );
+  if (options.startBeforeAccessory) {
+    coordinator.start();
+    await scheduler.flush();
+  }
   const accessory = new api.platformAccessory(
     'Synthetic heater',
     api.hap.uuid.generate('synthetic-device'),
   );
   accessory.context = { deviceId: device.id };
+  const warnings = [];
+  const notifications = [];
+  const initialTarget = accessory
+    .addService(api.hap.Service.Thermostat, accessory.displayName)
+    .getCharacteristic(api.hap.Characteristic.TargetTemperature);
+  initialTarget.on('characteristic-warning', (_type, message) => warnings.push(message));
+  initialTarget.on('change', ({ newValue }) => notifications.push(newValue));
   let saved = 0;
   const thermostat = new Thermostat(api.hap, accessory, coordinator, device.id, () => {
     saved += 1;
@@ -70,6 +81,8 @@ async function setup(t, options = {}) {
     writes,
     get,
     saved: () => saved,
+    warnings,
+    notifications,
     start: async () => {
       coordinator.start();
       await scheduler.flush();
@@ -244,5 +257,17 @@ test('target constraints intersect offset grids and fail closed for empty or mal
     await assert.rejects(h.get('TargetTemperature').handleSetRequest(32), communicationFailure);
     assert.equal(h.get('TargetTemperature').props.minValue, undefined);
   }
+  assert.equal(h.writes.length, 0);
+});
+
+test('fresh discovery applies target bounds without announcing a clamped default target', async (t) => {
+  const h = await setup(t, {
+    startBeforeAccessory: true,
+    readings: { control: available({ minimumCelsius: 15, maximumCelsius: 40, stepCelsius: 0.5 }) },
+  });
+  assert.deepEqual(h.warnings, []);
+  assert.deepEqual(h.notifications, [32]);
+  assert.equal(await h.get('TargetTemperature').handleGetRequest(), 32);
+  assert.equal(h.get('TargetTemperature').props.minValue, 15);
   assert.equal(h.writes.length, 0);
 });

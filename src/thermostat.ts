@@ -162,6 +162,9 @@ export class Thermostat {
       this.#target.props.perms.some((permission) => permission === this.#pairedWrite) !==
         Boolean(range)
     ) {
+      // Invalidate the old/default value before narrowing bounds: HAP would otherwise
+      // clamp it and emit an invented target before we publish the verified reading.
+      this.#target.updateValue(this.unavailable());
       this.#target.setProps({
         minValue: range?.minValue ?? null,
         maxValue: range?.maxValue ?? null,

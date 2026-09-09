@@ -196,7 +196,15 @@ test('only a clear fault status and zero compressor frequency establish inactive
       [...telemetry, frequency],
       1000,
     );
-  assert.deepEqual(normalize(stopped).activity, { available: true, value: 'idle' });
+  // DIGI1 is the datatype observed through the installed iHost plugin on 2026-09-09.
+  for (const dataType of [null, 'DIGI1']) {
+    assert.deepEqual(normalize({ ...stopped, dataType }).activity, {
+      available: true,
+      value: 'idle',
+    });
+  }
+  for (const dataType of ['TEMP', 'ENUM', 'DIGI2', '', 0])
+    assert.equal(normalize({ ...stopped, dataType }).activity.available, false);
   for (const value of ['52', '', '-1', 'NaN'])
     assert.equal(normalize({ ...stopped, value }).activity.available, false);
   assert.equal(normalize(stopped, true).activity.available, false);

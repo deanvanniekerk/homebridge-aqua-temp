@@ -249,7 +249,9 @@ export function normalizeReadings(
   // Zero corroborates the observed inactive baseline. Positive frequency cannot
   // distinguish useful heating from defrost/protection, so remains unavailable.
   const stopped =
-    isRecord(frequency) && frequency.dataType == null && decimal(frequency.value) === 0;
+    isRecord(frequency) &&
+    (frequency.dataType == null || frequency.dataType === 'DIGI1') &&
+    decimal(frequency.value) === 0;
   return Object.freeze({
     ...empty,
     waterCelsius: temperature(values, 'T02'),
