@@ -1,6 +1,6 @@
 # Mode support and graceful fallback
 
-Scope expanded by the owner on 2026-09-09. This records the implementation and evidence checklist. Heat/Cool/Auto decoding and controls are implemented locally from the component trials recorded below. The combined Home mode/power flow and complete Home presentation remain unverified. The expanded build is now installed; HAP advertises four modes, but macOS Home still displays Off/Heat. See the latest VALIDATION.md checkpoint. The seven-day soak is deferred until the expanded behavior is settled and an exact build is selected.
+Scope expanded by the owner on 2026-09-09. This records the implementation and evidence checklist. Heat/Cool/Auto decoding and controls are implemented locally from the component trials recorded below. The combined Home mode/power flow and complete Home presentation remain unverified. The expanded build is installed. Re-pairing refreshed Home’s four-mode menu, and an actual Home Auto/30°C round trip returned to the newer Heat/29.5°C/On baseline. Cool and optional-accessory Home checks remain pending; see the latest VALIDATION.md checkpoint. The seven-day soak is deferred until the expanded behavior is settled and an exact build is selected.
 
 ## Product requirements
 
