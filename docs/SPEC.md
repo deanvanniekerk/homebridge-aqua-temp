@@ -1,6 +1,6 @@
 # Aqua Temp Homebridge plugin specification
 
-Date: 2026-09-08. Status: agreed product scope; engineering baseline for implementation. Protocol and deployment findings remain explicit discovery gates.
+Date: 2026-09-08; scope expanded 2026-09-09. Status: agreed product scope; engineering baseline for implementation. Protocol and deployment findings remain explicit discovery gates.
 
 ## 1. Outcome and decisions
 
@@ -11,7 +11,7 @@ Replace an unreliable existing integration with an independently written plugin 
 | Initial equipment | AstralPool / Fluidra Waterlinx BOOST-i-INV-HP-40. The supplied nameplate identifies an inverter swimming pool heat pump. |
 | Use | At home; scoped as residential pool heating from the nameplate and interview. No domestic hot-water-specific functions. |
 | Host | Homebridge in Docker on SONOFF iHost. [Compatibility discovery](COMPATIBILITY.md) records observed ARMv7/runtime/storage details and the selected baseline; the installed image tag/digest remain unavailable. |
-| First-release features | Water temperature, target temperature, on/off, and truthful operating status. |
+| First-release features | Water temperature, target temperature, on/off, Heat/Cool/Auto selection where verified, truthful operating status, and capability-specific fallback. |
 | Connectivity | Aqua Temp cloud is acceptable. A dedicated account with a shared heater is recommended if current session behavior requires it. |
 | Quality | Extensive automated local tests, including failure/recovery scenarios; optional real-account checks and documented real-host validation. |
 | Distribution | Public independent GitHub repository, MIT license, eventual npm package. |
@@ -25,7 +25,7 @@ The source photos and screenshot stay outside the repository. Only the non-uniqu
 
 V1 targets the verified device profile and one configured Aqua Temp account per platform instance. Enumerate owned/shared devices when supported, deduplicate by stable identity, and allow an optional device allowlist. Additional models are supported only after their capability mappings are verified; unknown profiles must not receive speculative commands.
 
-Cooling/auto selection, silent mode, energy/history graphs, Eve extensions, scheduling, local LAN control, Matter integration, and a standalone iHost add-on are outside v1. Existing vendor-side timers and protection logic continue to belong to the device. The plugin does not run its own temperature-control loop or repeatedly force a preferred setting over changes made in the app.
+Heat, Cool and Auto selection are in scope following the owner’s 2026-09-09 clarification. Their device-specific contracts must be verified before enabling writes. Silent mode, energy/history graphs, Eve extensions, scheduling, local LAN control, Matter integration, and a standalone iHost add-on remain outside v1. Existing vendor-side timers and protection logic continue to belong to the device. The plugin does not run its own temperature-control loop or repeatedly force a preferred setting over changes made in the app.
 
 ## 3. Discovery gates
 
@@ -49,6 +49,8 @@ Owner clarification, 2026-09-08: no matching manual is available; the owner will
 
 Delivery clarification, 2026-09-08: the owner requests completion of #5, #7 and #9 within reason, with a functioning limited plugin and documented limitations. The implemented subset is existing-Heat power On/Off plus R02 targets on the app-observed 15–40°C / 0.5°C grid. Fractional API behavior is an explicitly disclosed engineering assumption, constrained by required readback rather than claimed as a physical test. No automatic Mode writes are permitted. Zero compressor frequency with clear fault status can represent inactivity; ambiguous positive activity remains unavailable. The detailed evidence and limitations in [DEVICE_MODEL.md](DEVICE_MODEL.md#supported-control-subset-and-limitations) define this delivery boundary. Physical UI and endurance proof remain #10, and release preparation remains #11.
 
+Public-use clarification, 2026-09-09: the owner explicitly requires Heat, Cool and Auto support and graceful fallback when a capability is unsupported. This supersedes the earlier Heat-only delivery boundary as the product goal; the existing Heat-only implementation and its completed tests remain historical evidence, not completed all-mode support. Unknown or malformed optional fields must not stop polling or disable unrelated verified readings/controls. Unknown models must never inherit this model’s writable mappings merely because they share an app. A public plugin must distinguish unsupported capabilities from loss of connectivity, disclose unsupported modes/ranges, and keep verified functionality useful. Home UI behavior is part of acceptance: returning an error for one thermostat field can make the whole tile unavailable, so field-level domain handling alone is insufficient. See [CAPABILITIES.md](CAPABILITIES.md) for the expansion gates and fallback design constraints.
+
 ## 4. Apple Home behavior
 
 Use Homebridge's supplied HAP API and a standard Thermostat service as the proposed Apple Home representation. Validate this choice against the verified device profile and actual Apple Home UI during integration.
@@ -57,10 +59,10 @@ Use Homebridge's supplied HAP API and a standard Thermostat service as the propo
 | --- | --- |
 | Current temperature | Show the verified water sensor reading in Celsius internally; let HomeKit handle display units. Missing, invalid or stale data must not turn into zero or the target temperature. |
 | Target temperature | Advertise the intersection of verified device constraints and supported HAP constraints. Reject unsupported values before network traffic; no silent clamping or invented default range. |
-| Target state | Expose Off/Heat for the supported heating profile. Define explicit vendor commands for both. Never silently switch a cooling/auto device into heating during discovery or restart. |
+| Target state | Expose Off plus the verified Heat/Cool/Auto modes for that device profile. Treat power and vendor mode separately; verify mode-specific targets and explicit transitions. Never change mode merely on discovery, polling, startup or recovery. |
 | Operating state | Map confirmed device activity to heating or idle/off semantics. A powered device below its target is not sufficient proof that it is heating. Flow faults, defrost, delays and unsupported states must not be misrepresented. |
-| Unexpected mode | When the app selects an unexposed mode, keep unambiguous telemetry available and return an appropriate error for unrepresentable mode/state values; log a bounded explanation. Do not fabricate Off or Heat. |
-| Unavailable state | Use HAP communication errors for unavailable characteristic reads/writes. Retain last known values internally with age for diagnostics. Apple Home presentation must be checked; do not assume custom fault fields render visibly. |
+| Unexpected mode | When the app selects an unsupported mode, preserve unambiguous telemetry and independently verified controls. Isolate the unsupported capability, show a bounded explanation and recover it automatically when supported data returns. Verify the resulting Home UI; do not fabricate Off or Heat. |
+| Unavailable state | Use communication errors for actual offline/stale/unreachable data. Unsupported capability handling must not unnecessarily make otherwise supported functionality unusable. Choose a representable fallback and verify it in Apple Home; do not guess a numeric state or assume custom fault fields render visibly. Retain last known values internally with age for diagnostics. |
 | External changes | Reconcile app/device changes through polling without overwriting them. |
 
 The plugin must not change power, setpoint or mode merely because it started or recovered connectivity. Setpoint writes must not implicitly turn the unit on unless that coupling is established by the protocol and clearly resolved in the spec before implementation.
