@@ -60,6 +60,11 @@ async function setup(t, options = {}) {
   const initialTarget = accessory
     .addService(api.hap.Service.Thermostat, accessory.displayName)
     .getCharacteristic(api.hap.Characteristic.TargetTemperature);
+  if (options.legacyReadOnlyCache)
+    accessory
+      .getService(api.hap.Service.Thermostat)
+      .getCharacteristic(api.hap.Characteristic.TargetHeatingCoolingState)
+      .setProps({ perms: ['ev', 'pr'] });
   initialTarget.on('characteristic-warning', (_type, message) => warnings.push(message));
   initialTarget.on('change', ({ newValue }) => notifications.push(newValue));
   let saved = 0;
@@ -294,4 +299,12 @@ test('newly recognized modes never masquerade as Heat and missing target does no
     { kind: 'target-state', state: 'off' },
     { kind: 'target-state', state: 'off' },
   ]);
+});
+
+test('legacy cached read-only target-state permissions are restored on upgrade', async (t) => {
+  const h = await setup(t, { legacyReadOnlyCache: true });
+  await h.start();
+  assert.ok(h.get('TargetHeatingCoolingState').props.perms.includes('pw'));
+  await h.get('TargetHeatingCoolingState').handleSetRequest(0);
+  assert.equal(await h.get('TargetHeatingCoolingState').handleGetRequest(), 0);
 });

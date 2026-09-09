@@ -430,3 +430,33 @@ test('a timed-out operation retains its dispatch lock until the underlying gatew
   assert.equal(coordinator.state(device.id).readings.reportedTargetCelsius.value, 30);
   coordinator.close();
 });
+
+test('Cool or Auto readback cannot confirm a Heat command even when power or target matches', async () => {
+  for (const mode of ['cool', 'auto'])
+    for (const command of [temperature(32), { kind: 'target-state', state: 'heat' }]) {
+      const scheduler = new FakeScheduler();
+      let selected = 'heat';
+      let writes = 0;
+      const coordinator = new AccountCoordinator(
+        {
+          discover: async () => ({ devices: [device], complete: true }),
+          read: async () => ({
+            ...readings(scheduler),
+            mode: { available: true, value: selected },
+          }),
+          validateCommand: () => {},
+          write: async () => {
+            writes += 1;
+            selected = mode;
+          },
+        },
+        { scheduler },
+      );
+      coordinator.start();
+      await scheduler.flush();
+      await assert.rejects(coordinator.command(device.id, command), { category: 'unconfirmed' });
+      assert.equal(writes, 1, 'uncertain write is not replayed');
+      assert.equal(coordinator.state(device.id).readings.mode.value, mode);
+      coordinator.close();
+    }
+});

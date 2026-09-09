@@ -102,6 +102,7 @@ export class Thermostat {
       await this.command({ kind: 'target-temperature', celsius: value });
     });
     this.#targetState = service.getCharacteristic(C.TargetHeatingCoolingState).setProps({
+      perms: [...new C.TargetHeatingCoolingState().props.perms],
       validValues: [C.TargetHeatingCoolingState.OFF, C.TargetHeatingCoolingState.HEAT],
     });
     this.bind(this.#targetState, () => {

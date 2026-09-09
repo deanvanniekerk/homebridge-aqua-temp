@@ -373,6 +373,8 @@ function confirms(readings: DeviceReadings, command: DeviceCommand): boolean {
   if (readings.connectivity !== 'online') return false;
   if (command.kind === 'target-temperature')
     return (
+      readings.mode.available &&
+      readings.mode.value === 'heat' &&
       readings.reportedTargetCelsius.available &&
       readings.reportedTargetCelsius.value === command.celsius
     );
@@ -380,6 +382,6 @@ function confirms(readings: DeviceReadings, command: DeviceCommand): boolean {
     readings.power.available &&
     (command.state === 'off'
       ? readings.power.value === 'off'
-      : readings.power.value === 'on' && readings.mode.available)
+      : readings.power.value === 'on' && readings.mode.available && readings.mode.value === 'heat')
   );
 }

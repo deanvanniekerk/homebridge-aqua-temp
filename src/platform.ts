@@ -177,6 +177,17 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
           this.#presentationFailures.delete(uuid);
         } catch {
           const entry = this.#accessories.get(uuid);
+          if (entry) {
+            // Homebridge inserts into its cache before attaching to HAP. Remove the
+            // exact attempted object so retry cannot be silently skipped as a duplicate.
+            try {
+              this.#api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
+                entry.accessory,
+              ]);
+            } catch {
+              /* The host removes the cache entry even if HAP attachment never happened. */
+            }
+          }
           try {
             entry?.presentation.close();
           } catch {

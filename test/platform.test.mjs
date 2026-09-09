@@ -52,7 +52,17 @@ async function host(t, extraConfig = {}, cached = [], scenario = 'online') {
     updated = [],
     logs = [];
   let failedRegistration = false;
+  const hostCache = new Map();
   api.on('registerPlatformAccessories', (accessories) => {
+    if (scenario === 'partial-registration') {
+      const item = accessories[0];
+      if (hostCache.has(item.UUID)) return; // Homebridge skips cached UUID collisions.
+      hostCache.set(item.UUID, item);
+      if (!failedRegistration && item.context.role === 'power') {
+        failedRegistration = true;
+        throw new Error('synthetic-private-after-cache-insertion');
+      }
+    }
     if (
       scenario === 'registration-failure' &&
       !failedRegistration &&
@@ -63,7 +73,12 @@ async function host(t, extraConfig = {}, cached = [], scenario = 'online') {
     }
     registered.push(...accessories);
   });
-  api.on('unregisterPlatformAccessories', (accessories) => removed.push(...accessories));
+  api.on('unregisterPlatformAccessories', (accessories) => {
+    removed.push(...accessories);
+    for (const item of accessories) hostCache.delete(item.UUID);
+    if (scenario === 'partial-registration' && !registered.includes(accessories[0]))
+      throw new Error('Cannot remove an accessory that was cached but never attached.');
+  });
   api.on('updatePlatformAccessories', (accessories) => updated.push(...accessories));
   const log = Object.fromEntries(
     ['info', 'warn', 'error', 'debug'].map((key) => [key, (line) => logs.push(line)]),
@@ -248,4 +263,23 @@ test('fallback accessories default off, can be selected independently, and are r
   assert.equal(disabled.removed.length, 1);
   assert.equal(disabled.removed[0].context.role, 'water');
   assert.equal(disabled.registered.length, 0);
+});
+
+test('registration rollback clears a partially inserted host cache entry before retry', async (t) => {
+  const h = await host(
+    t,
+    { includePowerSwitch: true, includeWaterTemperatureSensor: true },
+    [],
+    'partial-registration',
+  );
+  await h.launch();
+  await waitUntil(() => h.registered.length === 3);
+  assert.equal(h.removed.length, 1);
+  assert.equal(h.removed[0].context.role, 'power');
+  assert.equal(new Set(h.registered.map((a) => a.UUID)).size, 3);
+  assert.equal(
+    h.logs.filter((line) => line.includes('Accessory capability temporarily unavailable')).length,
+    1,
+  );
+  assert.doesNotMatch(h.logs.join('\n'), /synthetic-private/);
 });
