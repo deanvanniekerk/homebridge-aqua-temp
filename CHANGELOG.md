@@ -4,6 +4,15 @@ Release notes for `homebridge-aqua-temp-connect` live here. The release workflow
 section matching `package.json` to GitHub, so the npm package, tag and GitHub release use the same
 version and notes.
 
+## [1.0.2] - 2026-09-16
+
+### Changed
+
+- Improve Homebridge plugin search results for spaced `aqua temp` queries by publishing each term
+  as a package keyword.
+- Add a credential-redacted Homebridge UI configuration screenshot to the README and published
+  package.
+
 ## [1.0.1] - 2026-09-16
 
 ### Changed
