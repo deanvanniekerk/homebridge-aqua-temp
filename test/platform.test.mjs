@@ -220,6 +220,36 @@ test('explicit selection removes only excluded plugin identities; invalid config
   assert.doesNotMatch(invalid.logs.join('\n'), /synthetic-password|synthetic@example/);
 });
 
+test('an unconfigured platform removes stale accessories without starting monitoring', async (t) => {
+  const source = await host(t, {
+    includeOutletTemperatureSensor: true,
+    includeInletTemperatureSensor: true,
+  });
+  await source.launch();
+  await waitUntil(() => source.registered.length === 3);
+  const cached = source.registered.map((item) => source.api.platformAccessory.serialize(item));
+  source.stop();
+
+  const api = new HomebridgeAPI();
+  const removed = [];
+  const logs = [];
+  api.on('registerPlatformAccessories', () => assert.fail('registered an accessory'));
+  api.on('unregisterPlatformAccessories', (accessories) => removed.push(...accessories));
+  const log = Object.fromEntries(
+    ['info', 'warn', 'error', 'debug'].map((key) => [key, (line) => logs.push(`${key}:${line}`)]),
+  );
+  const platform = new AquaTempPlatform(log, { platform: PLATFORM_NAME }, api);
+  for (const item of cached) platform.configureAccessory(api.platformAccessory.deserialize(item));
+  api.emit('didFinishLaunching');
+  await delay(30);
+  t.after(() => api.emit('shutdown'));
+
+  assert.equal(removed.length, 3);
+  assert.deepEqual(logs, [
+    'info:Aqua Temp is not configured. Open the plugin settings to add an account.',
+  ]);
+});
+
 test('real login denial before discovery reaches sanitized normal/debug diagnostics without exposing vendor errors', async (t) => {
   for (const debug of [false, true]) {
     const h = await host(t, { debug }, [], 'denied');
@@ -240,7 +270,7 @@ test('real login denial before discovery reaches sanitized normal/debug diagnost
         failure: 'invalid-credentials',
       });
       assert.deepEqual(report.devices, []);
-      assert.equal(report.runtime.plugin, '1.0.0');
+      assert.equal(report.runtime.plugin, '1.0.1');
       assert.equal(report.runtime.homebridge, '2.4.0');
     }
     h.stop();

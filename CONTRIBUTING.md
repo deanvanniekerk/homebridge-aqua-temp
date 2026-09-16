@@ -4,7 +4,7 @@ Bug fixes, documentation improvements and evidence-backed device profiles are we
 
 ## Develop locally
 
-Use Node from `.node-version` and npm 10.9.8:
+Use a supported Node 22 or Node 24 release and npm 10.9.8. `.node-version` pins the project's Node 22 development baseline:
 
 ```sh
 npm ci
