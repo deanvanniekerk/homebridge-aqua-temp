@@ -3,7 +3,12 @@ import { test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { HomebridgeAPI } from '../node_modules/homebridge/dist/api.js';
 import { AquaTempPlatform } from '../dist/platform.js';
-import { ACCESSORY_NAMESPACE, PLUGIN_NAME, PLATFORM_NAME } from '../dist/settings.js';
+import {
+  ACCESSORY_NAMESPACE,
+  PLUGIN_NAME,
+  PLATFORM_NAME,
+  pluginVersion,
+} from '../dist/settings.js';
 import { redirectCloud } from './redirect-cloud.mjs';
 import { credentials, login, reply, serverFor, success } from './fake-cloud.mjs';
 
@@ -270,7 +275,7 @@ test('real login denial before discovery reaches sanitized normal/debug diagnost
         failure: 'invalid-credentials',
       });
       assert.deepEqual(report.devices, []);
-      assert.equal(report.runtime.plugin, '1.0.1');
+      assert.equal(report.runtime.plugin, pluginVersion());
       assert.equal(report.runtime.homebridge, '2.4.0');
     }
     h.stop();
