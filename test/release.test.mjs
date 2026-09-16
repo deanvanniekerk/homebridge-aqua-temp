@@ -1,9 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { copyFile, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+
+test('package metadata exposes Aqua Temp as separate plugin-search keywords', async () => {
+  const metadata = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const keywords = new Set(metadata.keywords.map((keyword) => keyword.toLowerCase()));
+
+  assert.equal(keywords.has('homebridge-plugin'), true);
+  assert.equal(keywords.has('aqua'), true);
+  assert.equal(keywords.has('temp'), true);
+});
 
 test('release guard requires approval, matching metadata and finished release notes', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'aqua-temp-release-'));
