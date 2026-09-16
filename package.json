@@ -1,19 +1,24 @@
 {
-  "name": "@deanvniekerk/homebridge-aqua-temp-connect",
-  "version": "1.0.0",
+  "name": "homebridge-aqua-temp-connect",
+  "version": "1.0.1",
   "description": "Aqua Temp heat pump controls and temperature sensors for Homebridge",
   "type": "module",
   "main": "dist/index.js",
   "exports": "./dist/index.js",
   "engines": {
-    "node": "^22.23.2",
+    "node": "^22 || ^24",
     "homebridge": "^2.4.0"
   },
   "packageManager": "npm@10.9.8",
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "supports-hap",
+    "aqua-temp",
+    "heat-pump",
+    "thermostat"
   ],
   "license": "MIT",
+  "author": "Dean van Niekerk",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/deanvanniekerk/homebridge-aqua-temp.git"
@@ -21,6 +26,10 @@
   "files": [
     "dist/*.js",
     "config.schema.json",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "RELEASE_STEPS.md",
     "docs/INSTALLATION.md",
     "docs/CONFIGURATION.md",
     "docs/COMPATIBILITY.md",
@@ -29,7 +38,8 @@
     "docs/RELEASING.md",
     "docs/SPEC.md",
     "CONTRIBUTING.md",
-    "scripts/check-release.mjs"
+    "scripts/check-release.mjs",
+    "scripts/release-notes.mjs"
   ],
   "scripts": {
     "build": "node scripts/build.mjs",

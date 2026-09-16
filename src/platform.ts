@@ -45,6 +45,13 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
       this.#accessories.clear();
       this.#retired.clear();
     });
+    if (isRecord(config) && config.username === undefined && config.password === undefined) {
+      log.info('Aqua Temp is not configured. Open the plugin settings to add an account.');
+      api.on('didFinishLaunching', () => {
+        this.removeAll();
+      });
+      return;
+    }
     try {
       this.#config = parseConfig(config);
       this.#diagnostics = new Diagnostics(
@@ -127,6 +134,17 @@ export class AquaTempPlatform implements DynamicPlatformPlugin {
       (role === 'outlet' && this.#config?.includeOutletTemperatureSensor === true) ||
       (role === 'ambient' && this.#config?.includeAmbientTemperatureSensor === true)
     );
+  }
+
+  private removeAll(): void {
+    for (const entry of this.#accessories.values()) {
+      this.#api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [entry.accessory]);
+      entry.presentation.close();
+    }
+    this.#accessories.clear();
+    for (const accessory of this.#retired)
+      this.#api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+    this.#retired.clear();
   }
 
   private removeExcluded(): void {

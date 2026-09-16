@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { releaseNotes } from './release-notes.mjs';
 
 const metadata = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const approved = process.env.AQUA_TEMP_RELEASE_APPROVED;
@@ -22,4 +23,5 @@ if (
 ) {
   throw new Error('Release metadata must select public npm access and the matching dist-tag.');
 }
+releaseNotes(metadata.version);
 console.log(`Release guard passed for ${metadata.name}@${metadata.version} (${tag})`);

@@ -11,9 +11,9 @@ Control compatible Aqua Temp heat pumps from Apple Home through Homebridge.
 
 ## Install
 
-Use **Node 22.23.2 or later in the 22.x line** and **Homebridge 2.4.0 or later in the 2.x line**. Back up Homebridge before changing plugins.
+Use **Node 22 or 24** and **Homebridge 2.4.0 or later in the 2.x line**. Back up Homebridge before changing plugins.
 
-Install `@deanvniekerk/homebridge-aqua-temp-connect` from Homebridge UI → Plugins, then follow the [setup guide](docs/INSTALLATION.md). Check the exact package name before installing.
+Install `homebridge-aqua-temp-connect` from Homebridge UI → Plugins, then follow the [setup guide](docs/INSTALLATION.md). Existing users of `@deanvniekerk/homebridge-aqua-temp-connect` should follow the [package-name migration](docs/INSTALLATION.md#migrate-from-the-scoped-package).
 
 Configure the Aqua Temp account, restart the plugin's child bridge and pair it with Apple Home. A dedicated account with the device shared to it is recommended when the phone app and plugin compete for a session. See [setup and migration](docs/INSTALLATION.md) and [configuration](docs/CONFIGURATION.md).
 
@@ -38,6 +38,7 @@ Report the plugin/runtime versions, device model, expected behavior and a saniti
 - [Contributing](CONTRIBUTING.md)
 - [Architecture and protocol boundaries](docs/ARCHITECTURE.md)
 - [Validation status](docs/VALIDATION.md)
-- [Release process](docs/RELEASING.md)
+- [Changelog](CHANGELOG.md)
+- [Release checklist](RELEASE_STEPS.md) and [release process](docs/RELEASING.md)
 
 An original, independent implementation under the [MIT license](LICENSE). Not affiliated with Aqua Temp, AstralPool, Fluidra, Apple or SONOFF.
