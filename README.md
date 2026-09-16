@@ -17,6 +17,12 @@ Install `homebridge-aqua-temp-connect` from Homebridge UI → Plugins, then foll
 
 Configure the Aqua Temp account, restart the plugin's child bridge and pair it with Apple Home. A dedicated account with the device shared to it is recommended when the phone app and plugin compete for a session. See [setup and migration](docs/INSTALLATION.md) and [configuration](docs/CONFIGURATION.md).
 
+### Configure
+
+Open the plugin settings in Homebridge UI and enter the Aqua Temp account details. Optional device filtering, diagnostics and temperature sensors can be configured on the same screen.
+
+<img src="docs/images/homebridge-configuration.png" alt="Homebridge Aqua Temp Connect configuration screen" width="720">
+
 ## Using the thermostat
 
 Switch Off before selecting a different mode. Selecting Heat, Cool or Auto requests On in that mode; it does not change the retained target. Auto uses a single target.

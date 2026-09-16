@@ -13,6 +13,8 @@
   "keywords": [
     "homebridge-plugin",
     "supports-hap",
+    "aqua",
+    "temp",
     "aqua-temp",
     "heat-pump",
     "thermostat"
@@ -32,6 +34,7 @@
     "RELEASE_STEPS.md",
     "docs/INSTALLATION.md",
     "docs/CONFIGURATION.md",
+    "docs/images/homebridge-configuration.png",
     "docs/COMPATIBILITY.md",
     "docs/ARCHITECTURE.md",
     "docs/VALIDATION.md",
