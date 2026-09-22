@@ -41,8 +41,11 @@ Home's heating/cooling indicator estimates demand when compressor activity is un
 
 Report the plugin/runtime versions, device model, expected behavior and a sanitized diagnostic report in a [GitHub issue](https://github.com/deanvanniekerk/homebridge-aqua-temp/issues). Never include account credentials, tokens, pairing codes or raw device identifiers.
 
+The TypeScript source is organized by responsibility: `src/cloud/` owns the Aqua Temp protocol and HTTP client, `src/device/` owns readings and command coordination, and `src/homebridge/` owns accessories. Tests live beside those modules. Run `npm run check` for Biome, type checking, the production build and Vitest; see the [project structure](docs/PROJECT_STRUCTURE.md) for the module and package contracts.
+
 - [Contributing](CONTRIBUTING.md)
 - [Architecture and protocol boundaries](docs/ARCHITECTURE.md)
+- [Project structure](docs/PROJECT_STRUCTURE.md)
 - [Validation status](docs/VALIDATION.md)
 - [Changelog](CHANGELOG.md)
 - [Release checklist](RELEASE_STEPS.md) and [release process](docs/RELEASING.md)

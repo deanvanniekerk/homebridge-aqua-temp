@@ -1,4 +1,5 @@
-import { isRecord } from './cloud-error.js';
+import { z } from 'zod';
+import { isRecord } from './cloud/cloud-error.js';
 
 export interface AquaTempConfig {
   readonly name: string;
@@ -42,71 +43,47 @@ export class ConfigurationError extends Error {
   }
 }
 
-function cleanText(value: unknown, maximum: number): value is string {
-  return (
-    typeof value === 'string' &&
-    Array.from(value).length <= maximum &&
-    /^\S(?:[^\r\n]*\S)?$/.test(value)
-  );
-}
+const cleanText = (maximum: number) =>
+  z
+    .string()
+    .refine((value) => Array.from(value).length <= maximum && /^\S(?:[^\r\n]*\S)?$/.test(value));
+
+const configSchema = z.object({
+  name: cleanText(64).default('Aqua Temp'),
+  username: cleanText(320),
+  password: z.string().refine((value) => Array.from(value).length <= 4096 && /\S/.test(value)),
+  deviceIds: z
+    .array(cleanText(256))
+    .max(100)
+    .refine((ids) => new Set(ids).size === ids.length)
+    .default([]),
+  pollInterval: z.number().int().min(30).max(300).default(60),
+  debug: z.boolean().default(false),
+  includeOutletTemperatureSensor: z.boolean().default(false),
+  includeInletTemperatureSensor: z.boolean().default(false),
+  includeAmbientTemperatureSensor: z.boolean().default(false),
+});
 
 /** Reject before constructing a cloud client; never include rejected values or unknown keys in errors. */
 export function parseConfig(input: unknown): AquaTempConfig {
   if (!isRecord(input)) throw new ConfigurationError('configuration');
-  const name: unknown = input.name === undefined ? 'Aqua Temp' : input.name;
-  if (!cleanText(name, 64)) throw new ConfigurationError('name');
-  if (!cleanText(input.username, 320)) throw new ConfigurationError('username');
-  if (
-    typeof input.password !== 'string' ||
-    Array.from(input.password).length > 4096 ||
-    !/\S/.test(input.password)
-  )
-    throw new ConfigurationError('password');
-  const deviceIds: unknown = input.deviceIds === undefined ? [] : input.deviceIds;
-  if (
-    !Array.isArray(deviceIds) ||
-    deviceIds.length > 100 ||
-    !deviceIds.every((id: unknown) => cleanText(id, 256)) ||
-    new Set(deviceIds).size !== deviceIds.length
-  )
-    throw new ConfigurationError('deviceIds');
-  const pollInterval: unknown = input.pollInterval === undefined ? 60 : input.pollInterval;
-  if (
-    typeof pollInterval !== 'number' ||
-    !Number.isInteger(pollInterval) ||
-    pollInterval < 30 ||
-    pollInterval > 300
-  )
-    throw new ConfigurationError('pollInterval');
-  const debug: unknown = input.debug === undefined ? false : input.debug;
-  if (typeof debug !== 'boolean') throw new ConfigurationError('debug');
-  const includeOutletTemperatureSensor: unknown =
-    input.includeOutletTemperatureSensor === undefined
-      ? false
-      : input.includeOutletTemperatureSensor;
-  const includeInletTemperatureSensor: unknown =
-    input.includeInletTemperatureSensor === undefined ? false : input.includeInletTemperatureSensor;
-  if (typeof includeOutletTemperatureSensor !== 'boolean')
-    throw new ConfigurationError('includeOutletTemperatureSensor');
-  if (typeof includeInletTemperatureSensor !== 'boolean')
-    throw new ConfigurationError('includeInletTemperatureSensor');
-  const includeAmbientTemperatureSensor: unknown =
-    input.includeAmbientTemperatureSensor === undefined
-      ? false
-      : input.includeAmbientTemperatureSensor;
-  if (typeof includeAmbientTemperatureSensor !== 'boolean')
-    throw new ConfigurationError('includeAmbientTemperatureSensor');
+  const result = configSchema.safeParse(input);
+  if (!result.success) {
+    const key = result.error.issues[0]?.path[0];
+    throw new ConfigurationError(
+      typeof key === 'string' && Object.hasOwn(messages, key) ? (key as Field) : 'configuration',
+    );
+  }
+  const config = result.data;
   return Object.freeze({
-    includeAmbientTemperatureSensor,
-    includeOutletTemperatureSensor,
-    includeInletTemperatureSensor,
-    name,
-    username: input.username,
-    password: input.password,
-    deviceIds: Object.freeze(
-      deviceIds.filter((id: unknown): id is string => typeof id === 'string'),
-    ),
-    pollInterval,
-    debug,
+    includeAmbientTemperatureSensor: config.includeAmbientTemperatureSensor,
+    includeOutletTemperatureSensor: config.includeOutletTemperatureSensor,
+    includeInletTemperatureSensor: config.includeInletTemperatureSensor,
+    name: config.name,
+    username: config.username,
+    password: config.password,
+    deviceIds: Object.freeze(config.deviceIds),
+    pollInterval: config.pollInterval,
+    debug: config.debug,
   });
 }

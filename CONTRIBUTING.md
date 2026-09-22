@@ -11,9 +11,9 @@ npm ci
 npm run check
 ```
 
-`npm run check` runs formatting, lint, strict TypeScript checks and the test suite. `npm run format` applies formatting. Tests use local fake cloud servers and synthetic credentials; never point them at a real account or Homebridge installation.
+`npm run check` runs Biome, strict production TypeScript checks, the build and Vitest. `npm run format` applies Biome formatting. Tests use local fake cloud servers and synthetic credentials; never point them at a real account or Homebridge installation.
 
-For a focused change, run `npm run build` then `node --test test/<file>.test.mjs`. Run the full checks before submitting. Keep individual cases below 1,000 ms in the CI timing reports; package lifecycle and extended soak checks are manual release tasks. Changes to dependencies, runtime engines or integration also need the ARMv7 lane. With a clean committed checkout and a local Docker engine:
+For a focused change, run `npx vitest run src/<area>/<file>.test.ts`. Run the full checks before submitting. Keep individual cases below 1,000 ms in the CI timing reports; production installation and extended soak checks are manual release tasks. Changes to dependencies, runtime engines or integration also need the ARMv7 lane. With a clean committed checkout and a local Docker engine:
 
 ```sh
 bash scripts/check-armv7.sh
@@ -27,7 +27,7 @@ Keep Homebridge presentation separate from transport, device decoding and accoun
 
 Add a regression at the boundary that owns the behavior. Prefer the real client/HAP code against local fakes over mocks that only assert their own calls. Keep fixtures small, sanitized and labeled as observed or synthetic. Untested models are attempted using the existing protocol mappings and logged as unverified. Changes to mode values, target bounds or readback need independent evidence; similar model names alone do not establish compatibility.
 
-Keep runtime dependencies minimal. The current plugin has none. Do not copy another integration's implementation, tests or assets. Contributions are licensed under the repository's MIT license.
+Keep runtime dependencies minimal; Zod validates untrusted configuration and vendor data. Do not copy another integration's device behavior or assets. Contributions are licensed under the repository's MIT license.
 
 ## Pull requests
 
