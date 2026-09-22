@@ -4,6 +4,15 @@ Release notes for `homebridge-aqua-temp-connect` live here. The release workflow
 section matching `package.json` to GitHub, so the npm package, tag and GitHub release use the same
 version and notes.
 
+## [1.0.3] - 2026-09-22
+
+### Changed
+
+- Organize TypeScript source by cloud, device and Homebridge responsibility, with colocated Vitest
+  tests and a package-content check.
+- Use Zod for runtime configuration and vendor-data validation, and Biome for formatting and linting.
+- Preserve the existing cloud protocol, accessory identities and control behavior.
+
 ## [1.0.2] - 2026-09-16
 
 ### Changed

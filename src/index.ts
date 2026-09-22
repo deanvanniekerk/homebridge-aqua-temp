@@ -1,6 +1,6 @@
 import type { API } from 'homebridge';
 
-import { AquaTempPlatform } from './platform.js';
+import { AquaTempPlatform } from './homebridge/platform.js';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 
 export default function register(api: API): void {

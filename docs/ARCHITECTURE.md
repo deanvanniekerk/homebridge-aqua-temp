@@ -1,16 +1,16 @@
 # Architecture
 
-The plugin has no runtime dependencies. Homebridge supplies HAP; TypeScript and test tools are development dependencies.
+The plugin uses Zod to validate untrusted configuration and vendor data. Homebridge supplies HAP; TypeScript, Biome and Vitest are development dependencies. See [project structure](PROJECT_STRUCTURE.md) for folder and packaging conventions.
 
 | Module                                                  | Responsibility                                                                           |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `cloud-client.ts`, `cloud-http.ts`, `cloud-protocol.ts` | Validated HTTP envelopes, authentication, deadlines and bounded read retry               |
-| `device-model.ts`                                       | Device identity, model evidence, strict telemetry decoding and absolute command encoding |
-| `gateway.ts`                                            | Owned/shared discovery, profile reads and fresh command preflight                        |
-| `coordinator.ts`, `command-queue.ts`                    | Account polling, freshness, per-device serialization and readback reconciliation         |
-| `platform.ts`                                           | Homebridge lifecycle, selection and stable accessory identities                          |
-| `thermostat.ts`, `basic-accessory.ts`                   | HAP controls and independent read-only temperature sensors                               |
-| `configuration.ts`, `diagnostics.ts`                    | Runtime/schema validation and sanitized bounded reporting                                |
+| `src/cloud/cloud-client.ts`, `cloud-http.ts`, `cloud-protocol.ts` | Validated HTTP envelopes, authentication, deadlines and bounded read retry               |
+| `src/device/device-model.ts`                                    | Device identity, model evidence, strict telemetry decoding and absolute command encoding |
+| `src/device/gateway.ts`                                         | Owned/shared discovery, profile reads and fresh command preflight                        |
+| `src/device/coordinator.ts`, `command-queue.ts`                 | Account polling, freshness, per-device serialization and readback reconciliation         |
+| `src/homebridge/platform.ts`                                   | Homebridge lifecycle, selection and stable accessory identities                          |
+| `src/homebridge/thermostat.ts`, `basic-accessory.ts`            | HAP controls and independent read-only temperature sensors                               |
+| `src/configuration.ts`, `src/device/diagnostics.ts`             | Runtime/schema validation and sanitized bounded reporting                                |
 
 ## Transport
 

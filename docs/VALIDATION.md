@@ -2,18 +2,18 @@
 
 ## Automated coverage
 
-`npm run check` runs formatting, lint, strict typechecking and behavioral tests on local fake services. CI covers current Node 22 and Node 24 on Linux x64, plus a pinned Node 22 Linux ARMv7 image under emulation. macOS arm64 is used for local development. See [contributing](../CONTRIBUTING.md).
+`npm run check` runs Biome, strict production typechecking, the build and Vitest behavioral tests on local fake services. CI covers current Node 22 and Node 24 on Linux x64, plus a pinned Node 22 Linux ARMv7 image under emulation. The ARMv7 lane runs the runtime checks because Biome has no executable for that architecture. macOS arm64 is used for local development. See [contributing](../CONTRIBUTING.md).
 
 | Boundary                                                                 | Tests                                                                                 |
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| HTTP/TLS, envelopes, authentication, expiry, contention and retry bounds | `test/cloud.test.mjs`                                                                 |
-| Discovery, sensor validation, modes and command mapping                  | `test/device-model.test.mjs`, `test/gateway.test.mjs`, `test/mode-controls.test.mjs`  |
-| Freshness, queues, cancellation and late results                         | `test/coordinator.test.mjs`, `test/commands.test.mjs`                                 |
-| HAP controls, optional sensors and cached identities                     | `test/thermostat.test.mjs`, `test/basic-accessory.test.mjs`, `test/platform.test.mjs` |
-| Lost-write recovery                                                      | `test/control-recovery.test.mjs`                                                      |
-| Configuration and redaction                                              | `test/configuration.test.mjs`, `test/diagnostics.test.mjs`                            |
+| HTTP/TLS, envelopes, authentication, expiry, contention and retry bounds | `src/cloud/cloud-client.test.ts`                                                                            |
+| Discovery, sensor validation, modes and command mapping                  | `src/device/device-model.test.ts`, `src/device/gateway.test.ts`, `src/device/coordinator.mode-controls.test.ts` |
+| Freshness, queues, cancellation and late results                         | `src/device/coordinator.test.ts`, `src/device/command-queue.test.ts`                                      |
+| HAP controls, optional sensors and cached identities                     | `src/homebridge/thermostat.test.ts`, `src/homebridge/basic-accessory.test.ts`, `src/homebridge/platform.test.ts` |
+| Lost-write recovery                                                      | `src/device/coordinator.control-recovery.test.ts`                                                        |
+| Configuration and redaction                                              | `src/configuration.test.ts`, `src/device/diagnostics.test.ts`                                             |
 
-CI keeps short behavioral tests; package contents, production installation/restart/removal and extended soak coverage are manual release checks. Simulated recovery tests do not establish elapsed hardware uptime or absence of memory leaks.
+CI keeps short behavioral tests and checks the package contains nested compiled modules while excluding development files. Production installation/restart/removal and extended soak coverage are manual release checks. Simulated recovery tests do not establish elapsed hardware uptime or absence of memory leaks.
 
 ## Actual-host evidence
 

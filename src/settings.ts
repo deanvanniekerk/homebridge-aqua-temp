@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { isRecord } from './cloud-error.js';
+import { isRecord } from './cloud/cloud-error.js';
 
 export const PLUGIN_NAME = 'homebridge-aqua-temp-connect';
 export const PLATFORM_NAME = 'AquaTemp';

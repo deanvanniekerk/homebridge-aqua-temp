@@ -9,7 +9,7 @@
 
 ## Install the package
 
-Search Homebridge UI → Plugins for `homebridge-aqua-temp-connect`, install the latest stable version, then open Plugin Config. To test a prerelease, explicitly select its beta version. The plugin has no runtime dependencies, install scripts or native compilation.
+Search Homebridge UI → Plugins for `homebridge-aqua-temp-connect`, install the latest stable version, then open Plugin Config. To test a prerelease, explicitly select its beta version. Zod is the only runtime dependency; the plugin has no install scripts or native compilation.
 
 To test a contribution, build a tarball from the intended commit on a development machine:
 
