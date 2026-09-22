@@ -25,13 +25,6 @@ async function runtimeFiles(directory: string, relative = ''): Promise<string[]>
 test('npm package contains every compiled runtime module and excludes development files', {
   timeout: 60_000,
 }, async () => {
-  const build = spawnSync('npm', ['run', 'build'], {
-    cwd: root,
-    encoding: 'utf8',
-    timeout: 30_000,
-  });
-  assert.equal(build.status, 0, build.stderr || build.stdout);
-
   const packed = spawnSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], {
     cwd: root,
     encoding: 'utf8',

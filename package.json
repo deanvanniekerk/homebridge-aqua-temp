@@ -51,11 +51,12 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "format:check": "biome format .",
+    "pretest": "npm run build",
     "test": "vitest run",
     "check": "biome check . && npm run check:runtime",
     "prepack": "npm run build",
     "prepublishOnly": "node scripts/check-release.mjs",
-    "check:runtime": "npm run typecheck && npm run build && npm test"
+    "check:runtime": "npm run typecheck && npm test"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
