@@ -51,12 +51,16 @@ publisher can be configured. Version `1.0.1` is the first unscoped release:
    - direct `npm publish` allowed
 6. Set `NPM_PUBLISH_ENABLED=true` and keep the GitHub `npm` environment restricted to `main` with
    maintainer approval.
-7. Create the one-time GitHub release at the published commit using the `1.0.1` section from
-   `CHANGELOG.md`. Later releases are created by the workflow:
+7. Create the one-time GitHub release at the exact published commit using the `1.0.1` section from
+   `CHANGELOG.md`. Record the commit SHA from npm and confirm its package version and release notes
+   before creating the release. Later releases are created by the workflow:
 
    ```sh
+   published_commit=$(npm view homebridge-aqua-temp-connect@1.0.1 gitHead)
+   git show "${published_commit}:package.json"
+   git show "${published_commit}:CHANGELOG.md"
    node scripts/release-notes.mjs 1.0.1 > /tmp/aqua-temp-release-notes.md
-   gh release create v1.0.1 --target main --title "homebridge-aqua-temp-connect 1.0.1" \
+   gh release create v1.0.1 --target "$published_commit" --title "homebridge-aqua-temp-connect 1.0.1" \
      --notes-file /tmp/aqua-temp-release-notes.md
    ```
 
@@ -89,12 +93,21 @@ If `publish` succeeded but `github-release` failed, use GitHub's **Re-run failed
 only the release job runs again; do not start another publication. The GitHub release job is
 idempotent when an existing release targets the same commit and rejects a conflicting tag target.
 
+If an older npm version is missing its GitHub release, verify the published commit using npm's
+`gitHead` and extract the matching notes from that commit's changelog. Create only the missing
+GitHub release at that exact SHA, with `--latest=false` when a newer release exists. If the tag
+already exists, verify that it resolves to the published commit and use `--verify-tag`. Do not
+republish the npm version or tag the current `main` as an older version. Release notes must be
+available for every published version because the Homebridge UI displays them during updates.
+
 Keep the previous working version or tarball. Users can reinstall it with its matching
 configuration using the [migration and rollback guide](INSTALLATION.md). Fix regressions in a new
 version. This package preserves the project's original accessory UUID namespace, but migration
 from an unrelated package association can still require pairing again.
 
 ## Homebridge verification
+
+Version `1.0.3` was [verified by Homebridge on 2026-10-18](https://github.com/homebridge/plugins/issues/1227#issuecomment-6250544726).
 
 Request verification only after the unscoped package and its matching GitHub release are public and
 the package-name migration has been tested. Use the

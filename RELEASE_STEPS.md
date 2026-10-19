@@ -14,6 +14,8 @@
 5. In GitHub, open **Actions → Publish npm release → Run workflow**, select `main`, enter the exact
    version and approve the `npm` environment.
 
-The workflow publishes to npm and then creates the matching Git tag and GitHub release. Do not
-create those manually. The first publication under a new npm name is the documented exception; see
-[releasing](docs/RELEASING.md#first-publication-under-the-unscoped-name).
+The workflow publishes to npm and then creates the matching Git tag and GitHub release. Confirm
+both jobs succeeded and the release notes are visible on GitHub for every published version; the
+Homebridge UI displays those notes when users update. Do not create tags or releases manually
+except for the [first publication](docs/RELEASING.md#first-publication-under-the-unscoped-name) or
+[recovery of a missing historical release](docs/RELEASING.md#failure-recovery).
